@@ -1,0 +1,74 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT_ID}
+            client-secret: ${CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/api/auth/login/oauth2"
+            scope:
+              - email
+              - profile
+        provider:
+          google:
+           # endpoint của gg để đăng nhập
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+               # sau khi gg gửi code về Allowed redirect URIs thì dùng url để lấy accect token để sau đó lấy thông tin user
+            token-uri: https://oauth2.googleapis.com/token
+            # endpoint để thấy thông tin email và profile của người dùng
+            user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+            user-name-attribute: sub
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${USER_MQ}
+    password: ${PASSWORD_MQ}
+
+  config:
+    import: optional:file:.env[.properties]
+
+  application:
+    name: shop
+
+  datasource:
+    url: jdbc:mysql://${URL_DATABASE}
+    username: ${USERNAME_DATABASE}
+    password: ${PASSWORD_DATABASE}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 50MB
+
+  cloudinary:
+    cloud-name: ${CLOUDINARY_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+
+app:
+  doaminFE: http://localhost:3000
+
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:60}
+    refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:3}
+    ws-ticket-expiration-seconds: ${JWT_WS_TICKET_EXPIRATION_SECONDS:60}
+
+  resend:
+    resend_key: ${RESEND_KEY}
+
+  turnstile:
+    secret-key: ${SECRET_KEY_CLOUDFLARE_TURNSTILE}
+
+  sepay:
+    secret-key-webhook: ${SECRET_KEY_WEBHOOK_SEPAY}
+
+  rabbitMq:
+    exchange: exchange
+    orderSepayCheckQueue: orderSepayQueue
+    orderSepayCheckRoutingKey: orderSepayKey
+    orderSepayDelayQueue: order.sepay.delay.queue
+    orderSepayDelayRoutingKey: order.sepay.delay.routingkey
+    order-sepay-delay-ttl-ms: 43200000

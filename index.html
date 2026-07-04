@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo Tổng hợp Kiến trúc & Nghiệp vụ AI Hub Platform</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm 15mm;
+
+            @bottom-right {
+                content: "Trang " counter(page);
+                font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+                font-size: 8.5pt;
+                color: #718096;
+            }
+
+            @bottom-left {
+                content: "AI Hub Platform — Báo cáo Tổng hợp Giải pháp Toàn diện";
+                font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+                font-size: 8.5pt;
+                color: #718096;
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            color: #2d3748;
+            line-height: 1.6;
+            font-size: 10.5pt;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        /* Cover Header Area */
+        .cover-header {
+            background-color: #1a365d;
+            color: #ffffff;
+            margin: -20mm -15mm 25px -15mm;
+            padding: 35px 15mm;
+            border-bottom: 5px solid #319795;
+        }
+
+        .cover-title {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .cover-subtitle {
+            font-size: 12pt;
+            color: #e2e8f0;
+            margin: 0 0 15px 0;
+        }
+
+        .cover-roles {
+            font-size: 9.5pt;
+            color: #bee3f8;
+            font-style: italic;
+        }
+
+        h2 {
+            color: #1a365d;
+            font-size: 13.5pt;
+            font-weight: bold;
+            border-left: 5px solid #319795;
+            padding-left: 10px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            color: #2c5282;
+            font-size: 11.5pt;
+            font-weight: bold;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+
+        ul,
+        ol {
+            margin-top: 0;
+            margin-bottom: 12px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        /* Tables styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 18px;
+            font-size: 10pt;
+            page-break-inside: auto;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        th {
+            background-color: #2d3748;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 10px;
+            border: 1px solid #2d3748;
+        }
+
+        td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f7fafc;
+        }
+
+        /* Flowchart / Structural Blocks using standard block display */
+        .flow-container {
+            margin: 20px 0;
+            text-align: center;
+            width: 100%;
+            page-break-inside: avoid;
+        }
+
+        .flow-block {
+            background-color: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 0 auto;
+            width: 85%;
+            font-size: 10pt;
+            text-align: center;
+            color: #2d3748;
+        }
+
+        .flow-block.highlight-core {
+            background-color: #ebf8ff;
+            border: 1.5px solid #4299e1;
+            color: #2b6cb0;
+            font-weight: bold;
+        }
+
+        .flow-arrow {
+            font-size: 16pt;
+            color: #4a5568;
+            margin: 4px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Table layout for parallel flows (banned flex/grid) */
+        .flow-split-table {
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border: none;
+        }
+
+        .flow-split-table tr:nth-child(even) td,
+        .flow-split-table td {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 10px;
+            width: 50%;
+        }
+
+        .module-box {
+            background-color: #f7fafc;
+            border-top: 3px solid #319795;
+            border-left: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 0 0 4px 4px;
+            padding: 12px;
+            min-height: 220px;
+        }
+
+        .module-box-title {
+            font-weight: bold;
+            color: #2c5282;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+            font-size: 9.5pt;
+        }
+
+        .flow-step {
+            font-size: 9pt;
+            text-align: left;
+            margin-bottom: 6px;
+            background: #ffffff;
+            padding: 6px;
+            border-radius: 3px;
+            border-left: 3px solid #cbd5e0;
+        }
+
+        .math {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+            font-weight: bold;
+            color: #1a365d;
+        }
+
+        .alert-box {
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+
+        .info-badge {
+            background-color: #e6fffa;
+            color: #234e52;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8.5pt;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover Section -->
+    <div class="cover-header">
+        <div class="cover-title">Báo cáo Tổng hợp Giải pháp & Kiến trúc Kỹ thuật</div>
+        <div class="cover-subtitle">Nền tảng Tự động hóa Doanh nghiệp AI Hub Platform (Module A & Module B)</div>
+        <div class="cover-roles">Vai trò: Senior Solution Architect + Business Analyst + Technical Project Lead</div>
+    </div>
+
+    <!-- 1. Executive Summary -->
+    <h2>1. Executive Summary</h2>
+    <p><strong>Dự án này là gì:</strong> Dự án triển khai một nền tảng trí tuệ nhân tạo tập trung mang tên <strong>AI
+            Hub Platform</strong> trên hạ tầng điện toán đám mây Microsoft Azure khu vực Singapore nhằm cung cấp dịch vụ
+        xử lý thông minh, bảo mật, cô lập dữ liệu (multi-tenant isolation) cho toàn bộ khu vực Motul APAC.</p>
+    <p><strong>Mục tiêu business:</strong> Tối ưu hóa hiệu suất vận hành doanh nghiệp bằng cách tự động hóa hoàn toàn
+        các quy trình xử lý tài liệu thủ công truyền thống, giảm thiểu sai sót do con người, rút ngắn thời gian xử lý
+        thỏa thuận cam kết từ vài tuần xuống vài ngày, và phòng ngừa rủi ro pháp lý/tài chính một cách chủ động ở cấp
+        Tập đoàn.</p>
+    <p><strong>Các vấn đề hệ thống muốn giải quyết:</strong> Loại bỏ hiện tượng nghẽn cổ chai (bottleneck) tại bộ phận
+        Customer Service (CS) khi phải nhập tay thủ công các đơn mua hàng (PO) không chuẩn quy cách vào hệ thống SAP;
+        đồng thời thiết lập cơ chế quản lý và định tuyến rủi ro tự động đối với các tài liệu hợp đồng phân tán tại các
+        vùng quốc gia, bảo vệ nguồn lực hữu hạn của đội ngũ Legal cấp vùng.</p>
+    <p><strong>Giá trị AI mang lại:</strong> Khả năng đọc hiểu dữ liệu đa ngôn ngữ phi cấu trúc tinh vi từ hình ảnh, bản
+        quét, fax hoặc PDF (sử dụng Vision Language Model - VLM), chuyển đổi sang cấu trúc dữ liệu máy có thể xử lý
+        (JSON), thực hiện ánh xạ ngữ nghĩa thông minh (Semantic Mapping) qua Vector Database và chạy công cụ kiểm tra
+        điều khoản dựa trên bộ luật kinh doanh cấu hình động (Legal Rule Set Engine).</p>
+    <p><strong>Các module chính của hệ thống:</strong> Nền tảng được thiết kế dưới dạng cấu trúc lõi chia sẻ (Shared
+        Core Framework) phục vụ đồng thời cho hai phân hệ chức năng chuyên biệt:</p>
+    <ul>
+        <li><strong>Module A: Sales Order Automation:</strong> Tập trung giải quyết bài toán tự động hóa xử lý đơn hàng
+            từ các đối tác lớn cho Motul Thailand và Motul Japan.</li>
+        <li><strong>Module B: Contract Management:</strong> Triển khai diện rộng trên phạm vi toàn cầu thuộc khu vực
+            APAC (hơn 8 quốc gia) nhằm quản lý, phê duyệt và định tuyến rủi ro hợp đồng thông minh.</li>
+    </ul>
+
+    <!-- 2. Business Problems -->
+    <h2>2. Business Problems</h2>
+    <p>Dựa trên tài liệu khảo sát hiện trạng của dự án, các pain points kinh doanh cốt lõi được tổng hợp chi tiết như
+        sau:</p>
+    <h3>2.1 Quy trình xử lý Sales Order hiện tại (Module A)</h3>
+    <ul>
+        <li><strong>Ràng buộc cứng từ phía khách hàng:</strong> Các chuỗi đối tác lớn (B-Quik, Autobacs, Bridgestone
+            ACT...) sử dụng hệ thống mua hàng (Procurement System) nội bộ riêng biệt. Họ xuất đơn PO dưới dạng file
+            PDF/hình ảnh theo biểu mẫu cố định của họ và từ chối sử dụng form đặt hàng tiêu chuẩn của Motul. Do đó, các
+            quy trình phê duyệt nội bộ truyền thống của Motul bị bỏ qua.</li>
+        <li><strong>Quá tải nhập liệu thủ công (Manual Bottleneck):</strong> Đội ngũ nhân viên hỗ trợ khách hàng (CS
+            Agent) bắt buộc phải đọc từng file PDF nhận từ Email hoặc Fax, dịch nghĩa và gõ tay (re-key) từng dòng sản
+            phẩm vào cổng giao diện SAP. Quy trình này tiêu tốn từ 30 đến 60 phút cho mỗi ca làm việc hàng ngày của một
+            nhân sự.</li>
+        <li><strong>Rủi ro sai lệch dữ liệu nghiêm trọng:</strong> Việc nhập tay các mã vật tư từ mô tả ngôn ngữ bản địa
+            (như tiếng Thái, tiếng Nhật) dẫn đến xác suất sai sót cao về mã sản phẩm (Material Code), địa điểm giao hàng
+            (Ship-to party), số lượng, và đơn giá chiết khấu, gây tranh chấp công nợ nghiêm trọng khi đối chiếu hóa đơn
+            tài chính.</li>
+    </ul>
+    <h3>2.2 Quy trình quản lý thỏa thuận hợp đồng hiện tại (Module B)</h3>
+    <ul>
+        <li><strong>Thiếu hụt kho lưu trữ trung tâm (No Central Repository):</strong> Các hợp đồng phân phối, đại lý và
+            đối tác chiến lược được thương thảo riêng lẻ bởi các đội ngũ kinh doanh tại từng quốc gia qua Email. Tệp tin
+            lưu trữ rải rác trên máy tính cá nhân hoặc ổ đĩa mạng nội bộ, Tập đoàn (Group Legal) hoàn toàn không có tầm
+            nhìn toàn cục (visibility) cho đến khi phát sinh tranh chấp pháp lý.</li>
+        <li><strong>Rủi ro ẩn khuất không được định lượng (Invisible Risk):</strong> Mọi lỗ hổng rủi ro về mặt pháp lý
+            và cam kết tài chính (ví dụ: điều khoản bồi thường vô hạn, thời hạn thanh toán vượt chuẩn) không được đo
+            lường, theo dõi hoặc gắn nhãn cảnh báo một cách đồng nhất.</li>
+        <li><strong>Tốc độ phê duyệt chậm trễ:</strong> Quy trình gửi đi gửi lại bản thảo điều chỉnh giữa đội ngũ vận
+            hành địa phương và luật sư cấp Tập đoàn thông qua đính kèm Email kéo dài thời gian thương thảo, làm mất cơ
+            hội kinh doanh.</li>
+        <li><strong>Sự quá tải của đội ngũ pháp chế:</strong> Luật sư cấp vùng (Legal Counsel) phải xử lý thủ công 100%
+            tài liệu được gửi lên mà không có bộ lọc sơ loại, lãng phí thời gian quý báu vào các hợp đồng tiêu chuẩn, ít
+            rủi ro thay vì tập trung vào các trường hợp High-Risk nghiêm trọng.</li>
+    </ul>
+
+    <!-- 3. Overall Platform Overview -->
+    <h2>3. Overall Platform Overview</h2>
+    <p>Nền tảng <strong>AI Hub Platform</strong> tuân thủ nguyên lý thiết kế kiến trúc: <em>"One Platform, Many
+            Modules"</em> (Một nền tảng, nhiều phân hệ). Khái niệm tổng thể được phân rã kỹ thuật như sau:</p>
+    <ul>
+        <li><strong>AI Hub là gì:</strong> Là một cụm hạ tầng tính toán và lưu trữ đám mây tập trung, đóng vai trò nền
+            móng (Foundation layer), cung cấp toàn bộ các API xử lý AI, phân tích thị giác, nhúng vector và kiểm soát
+            định danh người dùng.</li>
+        <li><strong>Cơ chế Multi-tenant & Cách ly dữ liệu:</strong> Hệ thống vận hành theo mô hình đa người thuê
+            (Multi-tenant) chung một mã nguồn ứng dụng nhưng cô lập hoàn toàn về mặt dữ liệu (Data Isolation at
+            Database/Storage Level). Mã quốc gia của người dùng quyết định phạm vi truy cập dữ liệu (Data access scope).
+            Người dùng thuộc quốc gia này tuyệt đối không thể nhìn thấy, tìm kiếm hoặc thao tác trên dữ liệu của quốc
+            gia khác.</li>
+        <li><strong>Hạ tầng dùng chung (Shared Infrastructure):</strong> Bao gồm cụm máy chủ ảo Azure Kubernetes Service
+            (AKS) có kích hoạt tính toán GPU phục vụ chạy mô hình ngôn ngữ lớn và mô hình thị giác lớn (VLM); cơ sở dữ
+            liệu quan hệ PostgreSQL tích hợp افزونه pgvector; phân vùng lưu trữ đối tượng Azure Blob Storage; và hệ
+            thống định danh tập trung Azure Active Directory (Azure AD).</li>
+        <li><strong>Thành phần tách biệt (Separate Components):</strong> Mỗi module sở hữu các bảng logic cơ sở dữ liệu
+            riêng, các giao diện quản trị nghiệp vụ riêng biệt trên Business Control Portal (Tab Sales Order và Tab
+            Contract Management), hệ thống hàng đợi phê duyệt (HITL queues) riêng và các bộ luật nghiệp vụ (Rule Sets)
+            độc lập.</li>
+        <li><strong>Mối quan hệ giữa hai Phân hệ:</strong> Module A và Module B liên kết chặt chẽ ở tầng tiếp nhận tài
+            liệu và chia sẻ năng lực xử lý thị giác lõi. Khi tài liệu được đẩy vào hệ thống, lõi AI Hub thực hiện tiền
+            xử lý và bóc tách chữ, sau đó tùy thuộc vào loại tài liệu (PO hoặc Thỏa thuận đối tác) hệ thống sẽ chuyển
+            hướng dữ liệu vào đường ống pipeline xử lý nghiệp vụ chuyên biệt của module đó.</li>
+    </ul>
+
+    <!-- 4. Main Modules -->
+    <h2>4. Main Modules</h2>
+
+    <h3>4.1 Module A: Sales Order Automation</h3>
+    <p><strong>4.1.1 Business Purpose:</strong> Tự động hóa toàn trình chu trình tiếp nhận đơn hàng PO của đối tác từ
+        các kênh không cấu trúc và đẩy trực tiếp thành các Sales Order hoàn chỉnh trong phân hệ SAP SD, loại bỏ thao tác
+        gõ tay của CS.</p>
+    <p><strong>4.1.2 Main Features:</strong> Tự động lắng nghe và tải file từ hòm thư chung; Trích xuất cấu trúc dữ liệu
+        PO đa ngôn ngữ; Tự động ánh xạ mã vật tư (Intelligent Material Mapping); Phân luồng phê duyệt theo độ tin cậy
+        kết quả (Confidence-based Routing); Giao diện xử lý can thiệp thủ công (HITL Dashboard).</p>
+    <p><strong>4.1.3 User Roles:</strong> CS Agent (Nhân viên CS địa phương), CS Supervisor / Mapping Manager (Trưởng bộ
+        phận CS / Người quản lý cấu hình ánh xạ), System Administrator.</p>
+    <p><strong>4.1.4 Main Workflow:</strong> Tiếp nhận file PDF/Fax -> AI OCR & Trích xuất JSON -> Thực hiện đối chiếu
+        mã vật tư qua Vector Search -> Kiểm tra ngưỡng tin cậy -> Tạo thẳng SO trên SAP (nếu độ tin cậy cao) hoặc Đẩy
+        vào hàng đợi soát lỗi (nếu độ tin cậy thấp) -> Lưu vết lịch sử.</p>
+    <p><strong>4.1.5 AI Responsibilities:</strong> Phân tích bố cục văn bản tài liệu bằng VLM để bóc tách thông tin chi
+        tiết từng dòng (Line items, Số lượng, Đơn giá); Chuyển đổi chuỗi text mô tả sản phẩm của khách hàng sang định
+        dạng Vector để tìm kiếm ngữ nghĩa trên danh mục Master Data của SAP.</p>
+    <p><strong>4.1.6 Human Responsibilities:</strong> Nhân viên CS kiểm tra và đính chính các trường dữ liệu bị AI cảnh
+        báo có độ tin cậy thấp (<span class="math">Confidence &lt; 90%</span>). Mapping Manager thiết lập các luật ánh
+        xạ cố định (Override Rules) đối với các chuỗi ký tự đặc biệt mà mô hình AI không thể tự nhận diện chính xác.</p>
+    <p><strong>4.1.7 Inputs / Outputs:</strong>
+        <br><em>Input:</em> File tệp tin PDF, ảnh quét đơn PO được upload thủ công hoặc đính kèm email (kích thước tối
+        đa 20MB).
+        <br><em>Output:</em> Bản ghi Sales Order dạng cấu trúc dữ liệu JSON chuẩn được đẩy qua Restful API để tạo đơn
+        thành công trên SAP ERP.
+    </p>
+    <p><strong>4.1.8 Important Rules / Constraints:</strong> Không được phép tự động đẩy đơn lên SAP nếu điểm tin cậy
+        tổng thể dưới mức ngưỡng quy định. Dữ liệu Master Data về khách hàng và vật tư phải được đồng bộ định kỳ từ SAP
+        về cơ sở dữ liệu nền tảng AI Hub.</p>
+
+    <h3>4.2 Module B: Contract Management</h3>
+    <p><strong>4.2.1 Business Purpose:</strong> Thiết lập quy trình rà soát, chấm điểm rủi ro pháp lý và định tuyến phê
+        duyệt hợp đồng tự động (Risk-Based Intelligent Routing), tối ưu hóa thời gian xử lý của luật sư Tập đoàn.</p>
+    <p><strong>4.2.2 Main Features:</strong> Tự động phân tách phân đoạn điều khoản (Clause Segmentation); Chấm điểm rủi
+        ro tự động dựa trên bộ luật kinh doanh; Đề xuất văn bản sửa đổi thay thế (Suggested Amendment Generation); Giao
+        diện làm việc chuyên dụng cho luật sư (Legal Workspace split-view); Kiểm soát lịch sử phiên bản tài liệu
+        (Version Control).</p>
+    <p><strong>4.2.3 User Roles:</strong> Country Requester (Nhân viên vận hành/kinh doanh tại quốc gia), Legal Counsel
+        APAC (Luật sư phê duyệt cấp vùng tại Singapore), Group Legal Admin.</p>
+    <p><strong>4.2.4 Main Workflow:</strong> Country Requester upload bản thảo hợp đồng -> AI Pre-screen & phân loại rủi
+        ro -> Hệ thống tự động định tuyến dựa trên mức rủi ro (Low/Med/High) -> Luật sư rà soát và đưa ra bình luận/sửa
+        đổi -> Gửi phản hồi về quốc gia -> Đối tác đàm phán lại và upload Phiên bản mới (v2, v3) -> AI phân tích so sánh
+        Diff -> Phê duyệt cuối cùng và lưu kho.</p>
+    <p><strong>4.2.5 AI Responsibilities:</strong> Phân tích ngữ nghĩa toàn bộ nội dung hợp đồng trước khi con người
+        tiếp cận; Tự động gán nhãn rủi ro theo các tiêu chuẩn pháp lý; Biên soạn giải thích rủi ro bằng ngôn ngữ kinh
+        doanh phổ thông (Plain-language explanation); Tìm kiếm các tiền lệ xử lý tương tự trong lịch sử (Historical
+        Precedents) bằng kỹ thuật RAG.</p>
+    <p><strong>4.2.6 Human Responsibilities:</strong> Luật sư (Legal Counsel) sử dụng giao diện workspace để kiểm tra
+        các phần AI đã bóc tách và highlight, đưa ra phán quyết cuối cùng (Approve/Reject), viết bình luận sửa đổi.
+        Người dùng quốc gia chịu trách nhiệm mang nội dung phản hồi đi thương thảo lại với đối tác bên ngoài.</p>
+    <p><strong>4.2.7 Inputs / Outputs:</strong>
+        <br><em>Input:</em> Bản thảo hợp đồng gốc dưới dạng PDF do quốc gia đệ trình kèm siêu dữ liệu về Loại hợp đồng
+        và Chức năng phòng ban.
+        <br><em>Output:</em> File hợp đồng hoàn chỉnh trạng thái "Approved" cùng toàn bộ cây thư mục lịch sử thay đổi
+        văn bản, báo cáo phân tích rủi ro và nhật ký phê duyệt (Audit log).
+    </p>
+    <p><strong>4.2.8 Important Rules / Constraints:</strong> Các hợp đồng được đánh giá mức độ rủi ro Thấp (Low Risk) và
+        không có vi phạm quy chuẩn nghiêm trọng sẽ được kích hoạt cơ chế Fast-track (Tự động phê duyệt hệ thống sau 24
+        giờ nếu luật sư không can thiệp).</p>
+
+    <!-- 5. NEW SECTION: Overall End-to-End Flowchart -->
+    <h2>5. Sơ đồ Luồng Nghiệp vụ Tổng thể Toàn trình (End-to-End Flowchart)</h2>
+    <p>Dưới đây là kiến trúc luồng dữ liệu và nghiệp vụ từ điểm tiếp nhận đầu vào cho đến điểm phân phối xử lý cuối cùng
+        của toàn bộ Nền tảng AI Hub Platform. Sơ đồ mô tả chi tiết cách thức hạ tầng chia sẻ (Shared Core) xử lý phân
+        tách dữ liệu đa người thuê trước khi định tuyến vào các luồng xử lý AI chuyên biệt của từng Module.</p>
+
+    <div class="flow-container">
+        <!-- Step 1 -->
+        <div class="flow-block highlight-core">
+            1. TIẾP NHẬN TÀI LIỆU ĐẦU VÀO (DOCUMENT INGESTION LAYER)<br>
+            <span style="font-size: 8.5pt; font-weight: normal; color: #4a5568;">
+                Module A: Email Listener (Azure Logic Apps) / Hệ thống Fax / Upload Portal<br>
+                Module B: Country Requester Portal (Kinh doanh/Vận hành upload file PDF bản thảo)
+            </span>
+        </div>
+        <div class="flow-arrow">↓</div>
+
+        <!-- Step 2 -->
+        <div class="flow-block">
+            2. XÁC THỰC SSO & PHÂN TÁCH DỮ LIỆU (AZURE AD SSO & TENANT ISOLATION)<br>
+            <span style="font-size: 8.5pt; color: #4a5568;">
+                Hệ thống nhận diện Token -> Khóa Scope truy cập theo Quốc gia (e.g., Thailand, Japan, Malaysia)<br>
+                Đảm bảo cô lập hoàn toàn ở tầng Database & Cảnh báo truy cập trái phép
+            </span>
+        </div>
+        <div class="flow-arrow">↓</div>
+
+        <!-- Step 3 -->
+        <div class="flow-block highlight-core">
+            3. HẠ TẦNG AI CHIA SẺ TRÊN AZURE AKS (SHARED AI INFERENCE PIPELINE)<br>
+            <span style="font-size: 8.5pt; font-weight: normal; color: #4a5568;">
+                Xử lý Tiền ảnh (Deskew, Split) -> Chạy mô hình Vision Language Model (Gemma / Qwen3-VL)<br>
+                Bóc tách lớp chữ và Layout văn bản phi cấu trúc -> Đẩy vào Database PostgreSQL + pgvector
+            </span>
+        </div>
+        <div class="flow-arrow">↓</div>
+
+        <!-- Parallel Split Flow Box via Table Layout -->
+        <table class="flow-split-table">
+            <tr>
+                <td>
+                    <div class="module-box">
+                        <div class="module-box-title">Đường ống Module A: Sales Order Automation</div>
+                        <div class="flow-step">
+                            <strong>Bước A4: AI Semantic Search & Mapping</strong><br>
+                            Mô hình LLM phối hợp pgvector nhúng chuỗi text sản phẩm bản địa, đối chiếu và tìm mã vật tư
+                            chuẩn trên SAP Master Data.
+                        </div>
+                        <div class="flow-step">
+                            <strong>Bước A5: Confidence Scoring & Routing</strong><br>
+                            - <span class="math">&ge; 90%</span>: Chuyển thẳng sang trạng thái Auto-Approve.<br>
+                            - <span class="math">75% - 89%</span>: Đẩy vào Hàng đợi Kiểm soát lỗi (HITL Queue).<br>
+                            - <span class="math">&lt; 75%</span>: CS bắt buộc chọn mã thủ công hoàn toàn.
+                        </div>
+                        <div class="flow-step">
+                            <strong>Bước A6: Đồng bộ SAP ERP</strong><br>
+                            Hệ thống tự động kích hoạt Restful API kết nối phân hệ SAP SD, khởi tạo Sales Order chính
+                            thức. Bắn email thông báo hoàn thành công việc.
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="module-box">
+                        <div class="module-box-title">Đường ống Module B: Contract Management</div>
+                        <div class="flow-step">
+                            <strong>Bước B4: AI Clause Pre-Screening</strong><br>
+                            LLM thực hiện phân đoạn điều khoản, đối chiếu với bộ quy tắc Legal Rule Set được nạp trong
+                            OPA Engine.
+                        </div>
+                        <div class="flow-step">
+                            <strong>Bước B5: Risk Scoring & SLA Routing</strong><br>
+                            - <strong>Low Risk</strong>: Kích hoạt Fast-track (Auto-approve sau 24h nếu Legal không xử
+                            lý).<br>
+                            - <strong>Medium Risk</strong>: Vào Dashboard của Legal Counsel (SLA 5 ngày).<br>
+                            - <strong>High Risk</strong>: Vào Priority Queue, gửi email cảnh báo khẩn cấp (SLA 2 ngày).
+                        </div>
+                        <div class="flow-step">
+                            <strong>Bước B6: Legal Workspace Loop & Repository</strong><br>
+                            Luật sư xem giao diện split-view, đưa bình luận/sửa đổi. Hệ thống quản lý phiên bản nghiêm
+                            ngặt (v1 &rarr; v2 &rarr; v3) kèm phân tích AI Diff Summary trước khi duyệt và lưu trữ kho
+                            lưu trữ trung tâm.
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 6. Detailed Workflow Analysis -->
+    <h2>6. Detailed Workflow Analysis</h2>
+
+    <h3>6.1 Kịch bản Chi tiết Phân hệ Sales Order Automation (Module A)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Bước thực hiện</th>
+                <th style="width: 20%;">Actor / Hệ thống phụ trách</th>
+                <th style="width: 30%;">Dữ liệu Đầu vào (Input) / Xử lý nghiệp vụ</th>
+                <th style="width: 35%;">Dữ liệu Đầu ra (Output) / Trạng thái kế tiếp</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Step 1: Document Intake</strong></td>
+                <td>Hệ thống tự động (Azure Logic Apps) hoặc CS Agent</td>
+                <td>File PO đính kèm email gửi đến hòm thư chung hoặc kéo thả thủ công file PDF/Fax vào cổng portal. Hệ
+                    thống thực hiện tiền xử lý căn chỉnh hình ảnh.</td>
+                <td>Tệp tài liệu lưu trữ an toàn trong Azure Blob Storage. Khởi tạo trạng thái <span
+                        class="info-badge">PO Received</span>.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 2: AI Extraction</strong></td>
+                <td>Vision Language Model (VLM Endpoint trên AKS GPU)</td>
+                <td>Đọc luồng dữ liệu nhị phân của file PDF/Ảnh. Thực hiện bóc tách ma trận bảng biểu, phân tích cấu
+                    trúc ngôn ngữ dòng (Line items).</td>
+                <td>Cấu trúc dữ liệu JSON thô chứa thông tin đối tác, danh mục hàng, số lượng, giá và điểm tin cậy OCR.
+                    Chuyển trạng thái sang <span class="info-badge">AI Reviewing</span>.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 3: Intelligent Mapping</strong></td>
+                <td>LLM + Kiến trúc pgvector (Semantic Search)</td>
+                <td>Nhúng (Embed) chuỗi ký tự mô tả sản phẩm bằng tiếng bản địa (Thái/Nhật) thành vector, tìm kiếm các
+                    bản ghi khớp nhất trong bảng dữ liệu SAP Material Master Data.</td>
+                <td>Bảng dữ liệu ánh xạ đề xuất kèm theo chỉ số khoảng cách vector xác thực độ chính xác ngữ nghĩa.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 4: Confidence Routing</strong></td>
+                <td>Hệ thống Rule Engine tự động</td>
+                <td>Áp dụng bộ lọc kiểm tra điểm tin cậy tổng hòa lý thuyết:
+                    <br>- Nếu <span class="math">Confidence &ge; 90%</span> &rarr; Bỏ qua duyệt người.
+                    <br>- Nếu <span class="math">75% &le; Confidence &lt; 89%</span> &rarr; Giao diện soát lỗi.
+                    <br>- Nếu <span class="math">Confidence &lt; 75%</span> &rarr; Khóa tính năng tự động.
+                </td>
+                <td>Rẽ nhánh luồng đi: Đẩy thẳng đến SAP hoặc Chuyển sang hàng đợi <span class="info-badge">Pending
+                        Action / HITL</span> của nhân viên CS.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 5: SAP Integration</strong></td>
+                <td>Hệ thống lõi kết nối API Gateway</td>
+                <td>Dữ liệu JSON sau khi được làm sạch hoàn toàn (bởi AI hoặc sau khi con người sửa tay) được đóng gói
+                    và gọi Restful API đồng bộ trực tiếp sang hệ thống SAP SD.</td>
+                <td>Mã định danh Sales Order ID từ SAP phản hồi về hệ thống. Cập nhật trạng thái cuối cùng <span
+                        class="info-badge">SO Created</span>, giải phóng hàng đợi.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.2 Kịch bản Chi tiết Phân hệ Contract Management (Module B)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Bước thực hiện</th>
+                <th style="width: 20%;">Actor / Hệ thống phụ trách</th>
+                <th style="width: 30%;">Dữ liệu Đầu vào (Input) / Xử lý nghiệp vụ</th>
+                <th style="width: 35%;">Dữ liệu Đầu ra (Output) / Trạng thái kế tiếp</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Step 1: Submission</strong></td>
+                <td>Country Requester</td>
+                <td>Người dùng đăng nhập qua SSO, tải tệp tin bản thảo PDF hợp đồng thương mại lên hệ thống, đính kèm
+                    nhãn phân loại (Loại hợp đồng, Phòng ban).</td>
+                <td>Bản ghi dữ liệu được tạo lập, lưu trữ file gốc. Hệ thống chuyển sang trạng thái <span
+                        class="info-badge">Submitted</span>.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 2: AI Pre-screening</strong></td>
+                <td>LLM + Bộ công cụ OPA Engine (Open Policy Agent)</td>
+                <td>Đọc toàn văn hợp đồng, phân tách thành các phân đoạn điều khoản độc lập (Clause Segmentation). Áp
+                    dụng bộ Legal Rule Set để quét từ khóa ngữ nghĩa và chấm điểm rủi ro.</td>
+                <td>Gán nhãn mức độ rủi ro (Low / Med / High), xuất báo cáo giải thích lý do bằng văn phong kinh doanh,
+                    đề xuất đoạn text chỉnh sửa. Chuyển trạng thái sang <span class="info-badge">AI Reviewing</span>.
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Step 3: Risk-Based Routing</strong></td>
+                <td>Hệ thống định tuyến tự động</td>
+                <td>Phân luồng dựa trên mức rủi ro và kích hoạt bộ đếm thời gian SLA tương ứng:
+                    <br>- <strong>Low Risk:</strong> Fast-track quy trình. <em>SLA: 24 giờ tự động duyệt</em> nếu không
+                    ai can thiệp.
+                    <br>- <strong>Medium Risk:</strong> Đẩy vào hàng đợi thông thường. <em>SLA: 5 ngày làm việc</em>.
+                    <br>- <strong>High Risk:</strong> Priority Queue + Bắn mail khẩn cấp. <em>SLA: 2 ngày làm việc</em>.
+                </td>
+                <td>Phân phối tài liệu đến đúng màn hình làm việc của Luật sư vùng phụ trách quốc gia đó. Trạng thái cập
+                    nhật: <span class="info-badge">With Legal</span>.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 4: Legal Review & Comment</strong></td>
+                <td>Legal Counsel APAC (Singapore)</td>
+                <td>Luật sư mở giao diện split-view chuyên dụng, xem các vị trí được AI highlight sẵn rủi ro, sử dụng
+                    công cụ hệ thống để chèn bình luận sửa đổi trực tiếp vào điều khoản.</td>
+                <td>Lưu vết các comment pháp lý của luật sư. Hệ thống phát lệnh bắn email thông báo cho quốc gia, chuyển
+                    trạng thái thành <span class="info-badge">Awaiting Revision</span>.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 5: Version Control Loop</strong></td>
+                <td>Country Requester + Hệ thống AI</td>
+                <td>Người dùng quốc gia tải file ý kiến của Legal về, thương thảo lại với đối tác, sau đó đăng tải phiên
+                    bản mới (v2). AI tự động chạy lại quy trình Pre-screen và tạo bản so sánh đối chiếu văn bản (Diff
+                    Summary).</td>
+                <td>Hệ thống ghi nhận phiên bản mới của hợp đồng, hiển thị rõ những thay đổi giữa v2 và v1 cho luật sư
+                    theo dõi nhanh. Vòng lặp tiếp diễn cho đến khi đạt thỏa thuận.</td>
+            </tr>
+            <tr>
+                <td><strong>Step 6: Archival & Repository</strong></td>
+                <td>Legal Counsel APAC</td>
+                <td>Luật sư kiểm tra phiên bản cuối cùng đạt chuẩn, nhấn nút chấp thuận phê duyệt chính thức trên cổng
+                    Business Control Portal.</td>
+                <td>Tài liệu chuyển sang trạng thái đóng <span class="info-badge">Approved</span> (hoặc <span
+                        class="info-badge">Rejected</span> nếu hủy bỏ). File chuyển vào kho Repository tập trung, đồng
+                    thời nạp dữ liệu vào cơ sở tri thức để AI học máy (Learning Loop).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 7. User Roles & Permissions -->
+    <h2>7. User Roles & Permissions</h2>
+    <p>Ma trận phân quyền chi tiết dựa trên vai trò người dùng (Role-Based Access Control) được cấu hình nghiêm ngặt như
+        sau:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên Vai trò (User Role)</th>
+                <th>Phạm vi Nhìn thấy (Visibility Scope)</th>
+                <th>Thao tác Được phép (Allowed Actions)</th>
+                <th>Hành vi Bị cấm (Prohibited Actions)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Country User / Requester</strong><br>(CS Agent, Sales, Finance địa phương)</td>
+                <td><span class="math">Isolation Scope = Local Country</span>. Chỉ nhìn thấy dữ liệu do chính quốc gia
+                    mình tạo ra.</td>
+                <td>Đăng nhập qua SSO; Upload file PO, file Hợp đồng thảo; Xem tiến độ phê duyệt và đồng bộ hệ thống;
+                    Nhận phản hồi của Legal; Đăng tải phiên bản sửa đổi (v2, v3).</td>
+                <td>Tuyệt đối không truy cập được dữ liệu của bất kỳ quốc gia nào khác; Không được can thiệp vào các
+                    tham số chấm điểm rủi ro của AI; Không có quyền chỉnh sửa bộ quy tắc Rule Set.</td>
+            </tr>
+            <tr>
+                <td><strong>Legal Counsel APAC</strong><br>(Luật sư cấp vùng tại Singapore)</td>
+                <td><span class="math">Global APAC Scope</span>. Nhìn thấy toàn bộ dữ liệu của tất cả các quốc gia thành
+                    viên trong khu vực.</td>
+                <td>Truy cập Legal Workspace; Xem highlight rủi ro văn bản và các tiền lệ lịch sử do AI gợi ý; Viết
+                    comment sửa đổi; Thao tác Duyệt (Approve) hoặc Từ chối (Reject) hợp đồng; Cấu hình trực tiếp nội
+                    dung Legal Rule Set trên giao diện quản trị.</td>
+                <td>Không có quyền xóa bỏ nhật ký hệ thống (Audit trail logs); Không can thiệp cấu hình hệ thống máy chủ
+                    hạ tầng lõi.</td>
+            </tr>
+            <tr>
+                <td><strong>CS Supervisor / Mapping Manager</strong></td>
+                <td><span class="math">Local Country Scope</span> (hoặc Regional Scope tùy theo quyết định bổ nhiệm).
+                </td>
+                <td>Truy cập giao diện Mapping Manager UI; Xem các ca lỗi phân loại vật tư của AI; Thiết lập và lưu các
+                    luật ánh xạ đè (Override Rules) cố định để sửa lỗi AI map sai mã SAP.</td>
+                <td>Không có quyền truy cập vào phân hệ Quản lý hợp đồng (Module B); Không được phê duyệt các tác vụ
+                    pháp lý của luật sư.</td>
+            </tr>
+            <tr>
+                <td><strong>Group System Administrator</strong></td>
+                <td>Toàn bộ hệ thống nền tảng AI Hub.</td>
+                <td>Quản lý tài nguyên hạ tầng đám mây Azure; Cấu hình các ngưỡng điểm tin cậy AI (Confidence
+                    thresholds); Điều chỉnh thời gian cảnh báo quá hạn SLA; Phân quyền người dùng và giám sát hiệu năng
+                    hệ thống.</td>
+                <td>Không có thẩm quyền phê duyệt thay thế cho Luật sư đối với các hợp đồng có rủi ro pháp lý; Không tự
+                    ý thay đổi nội dung các quy tắc kiểm tra Legal Rules nếu không có văn bản chỉ thị từ Trưởng bộ phận
+                    Pháp chế.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 8. AI / ML / LLM Responsibilities -->
+    <h2>8. AI / ML / LLM Responsibilities</h2>
+    <p>Trách nhiệm và thuật toán áp dụng cho các cấu phần trí tuệ nhân tạo trong hệ thống bao gồm:</p>
+    <ul>
+        <li><strong>Vision Language Model (VLM - Gemma / Qwen3-VL):</strong> Đóng vai trò lớp xử lý thị giác máy tính
+            nâng cao. Không chỉ OCR chữ thuần túy, VLM chịu trách nhiệm phân tích cấu trúc không gian (Layout/Table
+            parsing) của các file PDF, hóa đơn fax bị mờ hoặc lệch góc, tự động nhận diện tọa độ hộp giới hạn (Bounding
+            boxes) của bảng danh mục mặt hàng để chuyển đổi sang cấu trúc dữ liệu máy hiểu.</li>
+        <li><strong>Large Language Model (LLM):</strong> Chịu trách nhiệm thực hiện các tác vụ suy luận ngữ nghĩa phức
+            tạp bao gồm: Đọc hiểu văn bản hợp đồng phi cấu trúc, biên dịch tóm tắt sự khác biệt văn bản giữa các phiên
+            bản (Version Diff Summary), tự động sinh văn bản pháp lý thay thế chuẩn hóa (Suggested Amendment Generation)
+            dựa trên hướng dẫn của Rule Set, và chuyển đổi các câu từ chuyên môn phức tạp sang ngôn ngữ báo cáo ngắn gọn
+            cho doanh nghiệp (Plain-language explanation).</li>
+        <li><strong>Semantic Search & RAG (pgvector + BGE-M3 Embeddings):</strong> Thực hiện số hóa toàn bộ văn bản và
+            mô tả sản phẩm thành các chuỗi vector đa chiều lưu trữ trong PostgreSQL. Đối với Module A, cơ chế này dùng
+            để match chuỗi text tự do của khách hàng với mã vật tư chuẩn của SAP. Đối với Module B, mô hình áp dụng kỹ
+            thuật RAG (Retrieval-Augmented Generation) để truy vấn kho dữ liệu lịch sử, tìm ra các hợp đồng có điều
+            khoản tương tự đã từng được duyệt trong quá khứ nhằm gợi ý tiền lệ xử lý (Historical Precedent) cho luật sư.
+        </li>
+        <li><strong>Rule Engine (Open Policy Agent - OPA):</strong> Là bộ máy thực thi logic tách biệt với mã nguồn ứng
+            dụng. Nó tiếp nhận kết quả phân tích văn bản từ LLM, đối chiếu với các điều kiện logic của bộ luật kinh
+            doanh (Legal Rule Set) được thiết lập bởi luật sư để tính toán ra điểm rủi ro chính xác và đưa ra quyết định
+            phân luồng tự động (Confidence & Risk Routing).</li>
+        <li><strong>Learning Loop (Vòng lặp học máy):</strong> Hệ thống liên tục ghi nhận các hành vi hiệu chỉnh của con
+            người (ví dụ: khi CS chọn đè một mã vật tư khác mã AI gợi ý, hoặc khi Luật sư chấp thuận một điều khoản bị
+            AI cảnh báo rủi ro). Các dữ liệu này được đóng gói làm sạch và nạp ngược lại vào Vector Database dưới dạng
+            Few-shot Prompting mẫu, giúp mô hình AI nâng cao độ chính xác một cách tự động theo thời gian mà không cần
+            tiến hành Fine-tuning lại toàn bộ trọng số mô hình gốc.</li>
+    </ul>
+
+    <!-- 9. Technical Architecture -->
+    <h2>9. Technical Architecture</h2>
+    <p>Kiến trúc công nghệ của giải pháp được xây dựng trên nền tảng Cloud-Native vững chắc, tối ưu hóa khả năng tái sử
+        dụng tài nguyên hạ tầng:</p>
+    <ul>
+        <li><strong>Lớp Tiếp nhận & Xử lý Bất đồng bộ:</strong> Sử dụng <em>Azure Logic Apps</em> đóng vai trò cổng lắng
+            nghe sự kiện (Email Listener) liên tục kiểm tra hòm thư Microsoft Exchange chung của CS. Khi có email chứa
+            PO gửi đến, Logic App trích xuất ID và đẩy tin nhắn vào hàng đợi <em>Azure Service Bus (Message Queue)</em>
+            để điều tiết tải, tránh nghẽn hệ thống. Một chuỗi các <em>Azure Functions</em> serverless được kích hoạt để
+            bóc tách trang file PDF lớn và xử lý tiền bộ lọc hình ảnh.</li>
+        <li><strong>Lớp Tính toán AI Lõi (Shared Core Layer):</strong> Toàn bộ mô hình VLM và LLM được đóng gói
+            container hóa và host tập trung trên cụm máy chủ <em>Azure Kubernetes Service (AKS)</em> có tích hành các
+            node tính toán GPU tăng tốc. Sử dụng framework vLLM tối ưu để phục vụ API suy luận với độ trễ thấp cho cả
+            hai Phân hệ.</li>
+        <li><strong>Lớp Lưu trữ & Cơ sở dữ liệu:</strong>
+            <br>- <em>Azure Blob Storage:</em> Lưu trữ các tệp tin vật lý thô (PDF, hình ảnh) và các phiên bản tệp tin
+            được ký kết chính thức, thiết lập chính sách quản lý vòng đời tài liệu bảo mật.
+            <br>- <em>PostgreSQL với افزونه pgvector:</em> Đóng vai trò là Cơ sở dữ liệu duy nhất của toàn hệ thống, lưu
+            trữ dữ liệu quan hệ truyền thống (Audit logs, User Profiles, SAP Master Data) đồng thời lưu trữ trực tiếp
+            các Vector Embeddings phục vụ truy vấn tìm kiếm ngữ nghĩa siêu tốc.
+        </li>
+        <li><strong>Lớp Định danh & Kiểm soát Quyền truy cập:</strong> Tích hợp sâu với hệ thống doanh nghiệp qua
+            <em>Azure Active Directory (Azure AD SSO)</em> phối hợp cùng <em>Microsoft Graph API</em> nhằm xác thực
+            người dùng một cách an toàn và tự động trích xuất thuộc tính quốc gia để áp đặt cơ chế cách ly Tenant.</li>
+        <li><strong>Lớp Tích hợp Hệ thống ERP bên ngoài:</strong> Giao tiếp hai chiều với hệ thống <em>SAP ERP (Phân hệ
+                SAP SD)</em> thông qua cổng kết nối Restful API bảo mật để đồng bộ danh mục Master Data xuôi dòng và đẩy
+            dữ liệu Sales Order ngược dòng.</li>
+    </ul>
+
+    <!-- 10. Database / Entity / Data Concepts -->
+    <h2>10. Database / Entity / Data Concepts</h2>
+    <p><em>(Các thực thể dữ liệu logic được suy luận một cách chặt chẽ từ yêu cầu nghiệp vụ và quy trình xử lý tài liệu
+            trong hệ thống)</em></p>
+    <ul>
+        <li><strong>PO_Document (Thực thể tiếp nhận đơn hàng):</strong> Lưu trữ siêu dữ liệu của tệp PO đầu vào.
+            <br><em>Mối quan hệ:</em> Quan hệ Một - Nhiều với `SalesOrder_Draft`.
+        </li>
+        <li><strong>SalesOrder_Draft (Bản thảo đơn hàng trích xuất):</strong> Chứa cấu trúc dữ liệu JSON chi tiết dòng
+            hàng trích xuất bởi AI từ PO (Mã vật tư khách hàng, Số lượng, Đơn giá, Địa chỉ giao hàng, Điểm tin cậy OCR).
+            <br><em>Mối quan hệ:</em> Thuộc về `PO_Document`, liên kết đối chiếu với dữ liệu `SAP_Material_Master`.
+        </li>
+        <li><strong>Material_Mapping_Rule (Quy tắc ánh xạ vật tư):</strong> Lưu trữ các luật cấu hình đè cố định do
+            Mapping Manager thiết lập thủ công nhằm ép một chuỗi ký tự mô tả cụ thể của khách hàng về đúng mã SAP chuẩn
+            của Motul.</li>
+        <li><strong>Contract (Thực thể hợp đồng tổng thể):</strong> Quản lý một vòng đời thỏa thuận pháp lý của một đối
+            tác. Chứa thông tin: Tên đối tác, Loại hợp đồng, Mã quốc gia, Phòng ban sở tại, Trạng thái phê duyệt tổng
+            thể.
+            <br><em>Mối quan hệ:</em> Quan hệ Một - Nhiều với `Contract_Version` và `Risk_Assessment`.
+        </li>
+        <li><strong>Contract_Version (Phiên bản hợp đồng tài liệu):</strong> Quản lý các file vật lý nâng cấp trong quá
+            trình thương thảo thương mại (v1, v2, v3...). Lưu đường dẫn liên kết tệp tin trên Azure Blob Storage, định
+            danh người tải lên và mốc thời gian tạo lập.
+            <br><em>Mối quan hệ:</em> Thuộc về thực thể cha `Contract`.
+        </li>
+        <li><strong>Risk_Assessment (Báo cáo đánh giá rủi ro hệ thống):</strong> Lưu trữ kết quả chấm điểm rủi ro tổng
+            hòa của AI thực hiện trên một phiên bản hợp đồng cụ thể. Lưu các chỉ số: Điểm số rủi ro (Risk Score), Phân
+            loại rủi ro (Low/Med/High), Thời hạn xử lý quy định bởi SLA.
+            <br><em>Mối quan hệ:</em> Thuộc về một phiên bản `Contract_Version`.
+        </li>
+        <li><strong>Clause_Highlight (Bóc tách phân đoạn điều khoản lỗi):</strong> Lưu trữ nội dung chuỗi văn bản cụ thể
+            trong hợp đồng bị AI gắn cờ cảnh báo rủi ro, tọa độ hiển thị khung chữ trên PDF phục vụ UI, lý do vi phạm và
+            đoạn text đề xuất thay thế.
+            <br><em>Mối quan hệ:</em> Thuộc về bản ghi `Risk_Assessment`.
+        </li>
+        <li><strong>Legal_Comment (Ý kiến sửa đổi pháp lý):</strong> Lưu giữ nội dung văn bản sửa đổi tay hoặc các bình
+            luận chỉ dẫn do Luật sư (Legal Counsel) chủ động ghi nhận trực tiếp trên giao diện hệ thống.
+            <br><em>Mối quan hệ:</em> Gắn liền với một cấu phần `Clause_Highlight`.
+        </li>
+        <li><strong>Legal_Rule (Quy tắc luật pháp chế):</strong> Thực thể lưu trữ các điều kiện logic của bộ luật kiểm
+            tra (Ví dụ: Mã luật PMT-001, Điều kiện: Thời hạn thanh toán vượt quá 90 ngày, Kết quả gán: HIGH RISK). Có cơ
+            chế quản lý phiên bản luật để không làm ảnh hưởng đến các hợp đồng đã đóng trong quá khứ.</li>
+        <li><strong>Audit_Log (Nhật ký thanh tra hệ thống):</strong> Ghi vết không thể sửa xóa toàn bộ các hành động
+            mang tính thay đổi trạng thái trong hệ thống (Ai upload file, Thời gian AI xử lý, Ai bấm sửa đổi, Thời gian
+            đồng bộ SAP) phục vụ công tác tuân thủ doanh nghiệp.</li>
+    </ul>
+
+    <!-- 11. State Machine / Status Flow -->
+    <h2>11. State Machine / Status Flow</h2>
+    <p>Chu trình luân chuyển trạng thái dữ liệu (State Transitions) của các đối tượng trong hệ thống được quy định chi
+        tiết:</p>
+
+    <h3>11.1 Trạng thái Vòng đời Đơn hàng (Module A - Sales Order Status)</h3>
+    <ul>
+        <li><span class="info-badge">PO Received</span> &rarr; Thiết lập ngay khi hệ thống tự động tiếp nhận tệp tin từ
+            email hoặc khi người dùng kéo thả file thành công vào cổng upload portal. Biến cố kích hoạt: Hệ thống nhận
+            file.</li>
+        <li><span class="info-badge">AI Reviewing</span> &rarr; Trạng thái xử lý trung gian khi file được chuyển giao
+            vào hàng đợi tính toán của cụm máy chủ AKS GPU để thực hiện bóc tách VLM và chạy thuật toán Semantic
+            Mapping. Biến cố kích hoạt: AI bắt đầu chạy.</li>
+        <li><span class="info-badge">Pending Action / HITL</span> &rarr; Hệ thống tự động chuyển về trạng thái này nếu
+            điểm tin cậy tổng hòa của đơn hàng nằm dưới mức ngưỡng an toàn (<span class="math">Confidence &lt;
+                90%</span>). Tài liệu bị giữ lại tại hàng đợi soát lỗi của CS Agent để chờ con người can thiệp hiệu
+            chỉnh thủ công. Biến cố kích hoạt: AI tính toán xong điểm thấp.</li>
+        <li><span class="info-badge">SO Created</span> &rarr; Trạng thái đóng thành công của quy trình. Kích hoạt tự
+            động khi điểm tin cậy AI vượt ngưỡng (<span class="math">&ge; 90%</span>) hoặc kích hoạt thủ công khi nhân
+            viên CS Agent hoàn tất sửa lỗi và nhấn nút "Submit to SAP". Hệ thống thực hiện gọi API sang SAP SD thành
+            công và ghi nhận mã đơn hàng từ SAP phản hồi. Biến cố kích hoạt: SAP phản hồi mã đơn hàng thành công.</li>
+    </ul>
+
+    <h3>11.2 Trạng thái Vòng đời Hợp đồng Pháp lý (Module B - Contract Status)</h3>
+    <ul>
+        <li><span class="info-badge">Submitted</span> &rarr; Khởi tạo khi người dùng quốc gia (Country Requester) hoàn
+            tất đăng tải bản thảo hợp đồng đầu tiên (v1) lên hệ thống.</li>
+        <li><span class="info-badge">AI Reviewing</span> &rarr; Trạng thái xử lý tự động ngầm của hệ thống (kéo dài từ
+            60 đến 90 giây) để thực hiện bóc tách cấu trúc điều khoản và chạy mô hình OPA Rule Engine chấm điểm rủi ro.
+        </li>
+        <li><span class="info-badge">With Legal</span> / <span class="info-badge">Under Legal Review</span> &rarr; Tự
+            động kích hoạt đối với các hợp đồng được AI xếp hạng mức độ rủi ro Trung bình (Medium Risk) hoặc Cao (High
+            Risk). Tài liệu xuất hiện công khai trên dashboard làm việc của Luật sư vùng để chờ rà soát.</li>
+        <li><span class="info-badge">Awaiting Revision</span> / <span class="info-badge">Request Changes</span> &rarr;
+            Trạng thái xuất hiện khi Luật sư từ chối phê duyệt trực tiếp, đưa ra các bình luận sửa đổi và nhấn nút yêu
+            cầu chỉnh sửa. Hệ thống khóa quyền của luật sư và mở lại quyền cho người dùng quốc gia để tiến hành đàm phán
+            lại. Biến cố kích hoạt: Luật sư bấm nút "Request Changes".</li>
+        <li><span class="info-badge">Approved</span> &rarr; Trạng thái đóng thành công của hợp đồng. Được kích hoạt thủ
+            công khi Luật sư nhấn nút "Approve" trên phiên bản hợp đồng đạt chuẩn, hoặc được hệ thống kích hoạt tự động
+            theo cơ chế Fast-track đối với hợp đồng mức rủi ro Thấp (Low Risk) sau khi vượt quá thời hạn 24 giờ mà không
+            có sự can thiệp của con người.</li>
+        <li><span class="info-badge">Rejected</span> &rarr; Trạng thái đóng hủy bỏ khi Luật sư xác định hợp đồng chứa
+            đựng các rủi ro nghiêm trọng không thể sửa đổi hoặc đối tác từ chối điều chỉnh theo quy chuẩn quy định của
+            tập đoàn. Biến cố kích hoạt: Luật sư bấm nút "Reject".</li>
+    </ul>
+
+    <!-- 12. Key Business Rules -->
+    <h2>12. Key Business Rules</h2>
+    <p>Toàn bộ các quy tắc kinh doanh cốt lõi (Core Business Rules) được trích xuất nguyên vẹn từ tài liệu đặc tả giải
+        pháp:</p>
+    <ul>
+        <li><strong>Quy tắc Định tuyến và Quản lý SLA Hợp đồng (Module B):</strong> Thời hạn cam kết xử lý rà soát (SLA)
+            được hệ thống tự động áp đặt chặt chẽ dựa trên kết quả phân loại rủi ro của AI:
+            <br>- <strong>Hợp đồng Rủi ro Thấp (Low Risk - Chiếm khoảng 40-60% tổng lượng):</strong> Kích hoạt cơ chế
+            Fast-track. <em>SLA quy định: 0 - 24 giờ</em>. Nếu quá thời hạn này luật sư không mở file xử lý, hệ thống tự
+            động chuyển trạng thái thành Approved.
+            <br>- <strong>Hợp đồng Rủi ro Trung bình (Medium Risk - Chiếm khoảng 30-45%):</strong> Đẩy vào hàng đợi
+            thông thường. <em>SLA quy định: 5 ngày làm việc</em> của bộ phận Pháp chế.
+            <br>- <strong>Hợp đồng Rủi ro Cao (High Risk - Chiếm khoảng 5-15%):</strong> Đẩy vào hàng đợi ưu tiên đặc
+            biệt (Priority Queue), đồng thời kích hoạt hệ thống gửi email cảnh báo khẩn cấp (Escalation mail). <em>SLA
+                quy định nghiêm ngặt: 2 ngày làm việc</em>.
+        </li>
+        <li><strong>Quy tắc Phân luồng Độ tin cậy Đơn hàng (Module A):</strong> Quyết định mức độ tự động hóa chu trình
+            tạo đơn hàng trên SAP dựa trên điểm số tin cậy trích xuất:
+            <br>- <strong>Điểm số <span class="math">Confidence &ge; 90%</span>:</strong> Đạt điều kiện phê duyệt tự
+            động hoàn toàn (Auto-Approval Conditions). Hệ thống tự gọi API sang SAP tạo đơn mà không cần con người phê
+            duyệt.
+            <br>- <strong>Điểm số <span class="math">75% &le; Confidence &lt; 89%</span>:</strong> Giữ lại tại hàng đợi
+            HITL để nhân viên CS kiểm tra, rà soát các trường dữ liệu bị AI nghi ngờ.
+            <br>- <strong>Điểm số <span class="math">Confidence &lt; 75%</span>:</strong> Khóa toàn bộ các gợi ý tự
+            động, bắt buộc nhân viên CS phải thực hiện chọn mã khách hàng và mã vật tư bằng tay hoàn toàn qua giao diện
+            tìm kiếm thủ công.
+        </li>
+        <li><strong>Quy tắc Tiêu chuẩn Phân loại Rủi ro Pháp lý (Legal Rule Set Examples):</strong> Nội dung bộ luật do
+            Luật sư thiết lập trên cấu hình hệ thống:
+            <br>- Nếu điều khoản Thời hạn thanh toán (Payment term) ghi nhận giá trị lớn hơn 90 ngày &rarr; Hệ thống tự
+            động gán nhãn <strong>HIGH RISK</strong>. Nếu giá trị nằm trong khoảng từ 61 đến 90 ngày &rarr; Gán nhãn
+            <strong>MEDIUM RISK</strong>.
+            <br>- Nếu điều khoản Giới hạn trách nhiệm bồi thường thiệt hại ghi nhận trạng thái Không giới hạn (Unlimited
+            liability) &rarr; Hệ thống tự động gán nhãn <strong>HIGH RISK</strong>.
+            <br>- Nếu điều khoản Luật áp dụng giải quyết tranh chấp (Governing Law) ghi nhận tên quốc gia nằm ngoài danh
+            mục quốc gia tiêu chuẩn cho phép của tập đoàn &rarr; Hệ thống tự động gán nhãn <strong>MEDIUM RISK</strong>.
+        </li>
+        <li><strong>Quy tắc Cách ly Chủ quyền Dữ liệu Quốc gia (Country Isolation Rule):</strong> Quyền truy cập dữ liệu
+            được liên kết chặt chẽ với thuộc tính quốc gia (Country metadata) của tài khoản người dùng đăng nhập qua
+            Azure AD. Hệ thống áp dụng bộ lọc logic tự động tại tầng truy vấn cơ sở dữ liệu để ngăn chặn tuyệt đối việc
+            người dùng thuộc Tenant quốc gia A xem hoặc tìm kiếm dữ liệu thuộc Tenant quốc gia B. Luật sư cấp vùng tại
+            Singapore là đối tượng duy nhất được cấp quyền Global Scope vượt qua bộ lọc này.</li>
+    </ul>
+
+    <!-- 13. Integration Points -->
+    <h2>13. Integration Points</h2>
+    <p>Danh mục toàn bộ các điểm kết nối tích hợp hệ thống ngoại vi của nền tảng:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Hệ thống tích hợp</th>
+                <th>Mục đích nghiệp vụ</th>
+                <th>Hướng dữ liệu (Direction)</th>
+                <th>Thời điểm kích hoạt (Trigger Point)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Azure Active Directory (Azure AD)</strong></td>
+                <td>Xác thực đăng nhập một lần (SSO), thu thập thông tin Profile người dùng bao gồm Phòng ban và Quốc
+                    gia sở tại để áp quyền RBAC.</td>
+                <td>Hai chiều (Bi-directional Auth)</td>
+                <td>Khi người dùng truy cập vào địa chỉ URL của Business Control Portal và thực hiện đăng nhập.</td>
+            </tr>
+            <tr>
+                <td><strong>Hòm thư Doanh nghiệp (MS Exchange / Outlook API)</strong></td>
+                <td>Lắng nghe và tự động quét các email mới gửi đến hòm thư chung của bộ phận CS để tải tệp đơn hàng PO
+                    đính kèm về hệ thống xử lý.</td>
+                <td>Chiều vào (Inbound)</td>
+                <td>Tự động kích hoạt theo thời gian thực (Real-time Webhook) khi có mail mới xuất hiện trong Inbox hòm
+                    thư chung.</td>
+            </tr>
+            <tr>
+                <td><strong>SAP ERP Master Data Synchronization</strong></td>
+                <td>Đồng bộ danh mục Master Data chuẩn bao gồm: Danh mục mã vật tư (Material Master), Mã khách hàng đối
+                    tác (Customer Master), Bảng giá quy chuẩn phục vụ thuật toán Semantic Search của AI.</td>
+                <td>Chiều vào (Inbound Pull)</td>
+                <td>Kích hoạt chạy tự động theo lịch trình cấu hình sẵn (ví dụ: Chạy ngầm định kỳ vào lúc 01:00 AM hàng
+                    ngày).</td>
+            </tr>
+            <tr>
+                <td><strong>SAP SD (Sales & Distribution Module)</strong></td>
+                <td>Khởi tạo đơn hàng Sales Order chính thức trên hệ thống ERP của tập đoàn sau khi dữ liệu PO được xác
+                    thực an toàn.</td>
+                <td>Chiều ra (Outbound Push)</td>
+                <td>Kích hoạt tự động khi điểm tin cậy AI vượt mức ngưỡng an toàn hoặc kích hoạt thủ công khi nhân viên
+                    CS nhấn nút "Submit" trên hàng đợi HITL.</td>
+            </tr>
+            <tr>
+                <td><strong>Hệ thống Thông báo nội bộ (Email / MS Teams)</strong></td>
+                <td>Gửi thông báo cập nhật trạng thái đơn hàng, bắn mail cảnh báo khẩn cấp (Escalation) cho Luật sư khi
+                    có hợp đồng High-Risk gửi lên hoặc gửi kết quả feedback cho quốc gia.</td>
+                <td>Chiều ra (Outbound Push)</td>
+                <td>Khi trạng thái tài liệu chuyển dịch sang các mốc quan trọng (Ví dụ: Chuyển sang High Risk, Chuyển
+                    sang Request Changes).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 14. Audit / Compliance / Security -->
+    <h2>14. Audit / Compliance / Security</h2>
+    <ul>
+        <li><strong>Nhật ký Thanh tra Toàn diện (Centralized Audit Trail):</strong> Hệ thống ghi nhận lại toàn bộ lịch
+            sử tương tác của tất cả các tài liệu vào một bảng cơ sở dữ liệu PostgreSQL chuyên biệt có cơ chế bảo mật
+            khóa ghi, không cho phép bất kỳ người dùng hay quản trị viên nào sửa đổi hoặc xóa bỏ. Mỗi bản ghi log bao
+            gồm thông tin chi tiết: ID tài liệu, ID người thực hiện, Hành động cụ thể (Upload, Duyệt, Sửa đổi, Đồng bộ
+            SAP), Mốc thời gian chính xác (Timestamp) và trạng thái dữ liệu trước/sau khi thay đổi, đáp ứng đầy đủ tiêu
+            chuẩn thanh tra tuân thủ của tập đoàn.</li>
+        <li><strong>Kiểm soát Phiên bản Tài liệu nghiêm ngặt (Strict Version Tracking):</strong> Trong phân hệ quản lý
+            hợp đồng (Module B), hệ thống tuyệt đối không áp dụng cơ chế ghi đè tệp tin cũ khi người dùng cập nhật văn
+            bản đàm phán mới. Mỗi lần tải lên sẽ sinh ra một bản ghi phiên bản độc lập (v1 &rarr; v2 &rarr; v3) liên kết
+            chặt chẽ với thực thể hợp đồng cha. AI Hub thực hiện chạy lại quy trình đánh giá rủi ro cho phiên bản mới và
+            tự động chạy thuật toán so sánh văn bản để xuất báo cáo tóm tắt thay đổi (Change Diff Summary), hiển thị
+            trực quan cho Luật sư thấy rõ đối tác đã sửa đổi cụ thể những câu chữ nào so với phiên bản trước đó.</li>
+        <li><strong>Bảo mật Phân tách Đa người thuê (Multi-tenant Security Isolation):</strong> Thiết kế hệ thống đảm
+            bảo việc cách ly an toàn dữ liệu ở tầng logic ứng dụng và tầng lưu trữ. Ngay sau khi người dùng xác thực
+            thành công qua Azure AD SSO, mã quốc gia đính kèm tài khoản sẽ được hệ thống mã hóa và gắn chặt vào Session
+            làm việc. Mọi câu lệnh truy vấn SQL đọc dữ liệu từ PostgreSQL hoặc lệnh gọi tệp tin từ Azure Blob Storage
+            đều bắt buộc phải đi qua một bộ lọc điều kiện (Where Clause isolation filter) áp đặt bởi hệ thống để ngăn
+            chặn triệt để nguy cơ rò rỉ dữ liệu chéo giữa các quốc gia trong vùng.</li>
+    </ul>
+
+    <!-- 15. Screens / Portal / UI Concepts -->
+    <h2>15. Screens / Portal / UI Concepts</h2>
+    <p>Hệ thống cung cấp một cổng giao diện web tập trung mang tên <strong>Business Control Portal</strong> tích hợp đầy
+        đủ các màn hình chức năng chuyên dụng:</p>
+    <ul>
+        <li><strong>Giao diện Dashboard Tổng quan (Global / Local Dashboard):</strong> Hiển thị các chỉ số đo lường hiệu
+            suất vận hành theo thời gian thực (Số lượng PO đã tiếp nhận, Tỷ lệ đơn hàng phê duyệt tự động không cần con
+            người chạm tay, Biểu đồ theo dõi thời gian xử lý thỏa thuận so với thời hạn SLA quy định, Thống kê số lượng
+            hợp đồng theo từng nhóm rủi ro Low/Med/High). Người dùng địa phương chỉ nhìn thấy biểu đồ của nước mình,
+            trong khi Luật sư vùng tại Singapore có quyền chuyển đổi góc nhìn toàn cục khu vực APAC.</li>
+        <li><strong>Cổng tải tệp tin (Upload Portal / Submission Interface):</strong> Giao diện đơn giản dành cho nhân
+            viên kinh doanh quốc gia thực hiện thao tác kéo thả file PDF hợp đồng hoặc tệp PO, lựa chọn các trường siêu
+            dữ liệu bắt buộc (Loại thỏa thuận, Phòng ban yêu cầu) trước khi nhấn nút đệ trình hệ thống.</li>
+        <li><strong>Hàng đợi So soát lỗi Vận hành (Pending Review / HITL Queue):</strong> Dành riêng cho nhân viên CS
+            Agent (Module A) và Luật sư (Module B). Giao diện hiển thị danh sách các tác vụ đang bị kẹt xử lý do điểm
+            tin cậy AI thấp hoặc do mức độ rủi ro cao, có bộ đếm ngược thời gian SLA (SLA Countdown Timer) chuyển màu
+            cảnh báo (Xanh/Vàng/Đỏ) để nhắc nhở người dùng xử lý đúng hạn.</li>
+        <li><strong>Không gian rà soát Pháp lý chuyên dụng (Legal Workspace):</strong> Giao diện màn hình đôi
+            (Split-view) được tối ưu hóa cho Luật sư vùng. Phía bên trái hiển thị trực quan file PDF hợp đồng gốc có
+            overlay các hộp đồ họa màu sắc (Màu đỏ cho High Risk, Màu hổ phách cho Medium Risk) đánh dấu chính xác tọa
+            độ các điều khoản vi phạm quy chuẩn. Phía bên phải hiển thị bảng phân tích chi tiết của AI (Lý do gán nhãn
+            rủi ro bằng ngôn ngữ kinh doanh, gợi ý tiền lệ lịch sử và ô văn bản chứa đoạn text đề xuất thay thế). Luật
+            sư có thể chèn trực tiếp bình luận phê duyệt hoặc sửa tay văn bản tại đây.</li>
+        <li><strong>Giao diện Quản lý Ánh xạ (Mapping Manager UI):</strong> Màn hình dành cho CS Supervisor tiến hành
+            kiểm tra danh sách các chuỗi text mô tả sản phẩm của khách hàng mà AI không thể tự động match mã SAP. Người
+            dùng có thể tìm kiếm thủ công danh mục SAP Master Data và nhấn nút thiết lập luật ánh xạ đè (Override Rule)
+            để hệ thống tự động áp dụng chính xác cho các đơn hàng tiếp theo.</li>
+        <li><strong>Bàn điều khiển Quy tắc Pháp lý (Rule Sets Admin Console):</strong> Giao diện quản trị cấp cao dành
+            cho Luật sư Tập đoàn để quản lý các Legal Rules mà không cần viết mã nguồn (No-code rule management). Luật
+            sư có thể tự thêm quy tắc mới, điều chỉnh ngưỡng giá trị (ví dụ: Thay đổi quy chuẩn thời hạn thanh toán từ
+            60 ngày thành 45 ngày) và nhấn nút áp dụng để cấu hình mới có hiệu lực ngay lập tức cho các tài liệu đệ
+            trình tương lai.</li>
+    </ul>
+
+    <!-- 16. Cost / Investment Summary -->
+    <h2>16. Cost / Investment Summary</h2>
+    <p>Tóm tắt toàn bộ cơ cấu chi phí đầu tư kinh tế của dự án được trích xuất chính xác từ bảng dữ liệu tài chính trong
+        đặc tả giải pháp (mọi số liệu đã bao gồm 10% chi phí dịch vụ quản trị ứng dụng AMS cho Năm 2 và Năm 3):</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Hạng mục Chi phí Đầu tư (Cost Item)</th>
+                <th>Chi phí Năm 1 (Year 1)</th>
+                <th>Chi phí Năm 2 (Year 2)</th>
+                <th>Chi phí Năm 3 (Year 3)</th>
+                <th>Tổng chi phí 3 năm (3-Year Total)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1. Phí Hạ tầng Đám mây Hàng năm (Annual Infrastructure Cost)</strong><br><span
+                        style="font-size: 8.5pt; color: #718096;">(Chi phí cố định dùng chung cho cả Phân hệ SO
+                        Automation & Phân hệ Contract Management)</span></td>
+                <td>$19,751</td>
+                <td>$19,751</td>
+                <td>$19,751</td>
+                <td><strong>$59,254</strong></td>
+            </tr>
+            <tr>
+                <td><strong>2. Chi phí Triển khai: Phân hệ Sales Order Automation</strong><br><span
+                        style="font-size: 8.5pt; color: #718096;">- Cấu hình hạ tầng lõi AI Hub Foundation + Triển khai
+                        cho thị trường MOTUL JAPAN (Chiếm 85% trọng số triển khai đơn hàng)</span></td>
+                <td>$71,400</td>
+                <td>$7,140<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td>$7,140<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td><strong>$85,680</strong></td>
+            </tr>
+            <tr>
+                <td><strong>3. Chi phí Triển khai mở rộng: Phân hệ Sales Order Automation</strong><br><span
+                        style="font-size: 8.5pt; color: #718096;">- Kế thừa nền tảng AI Hub + Triển khai cấu hình bổ
+                        sung cho thị trường MOTUL THAILAND (Tương đương 20% chi phí triển khai gốc của Japan)</span>
+                </td>
+                <td>$21,420</td>
+                <td>$2,142<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td>$2,142<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td><strong>$25,704</strong></td>
+            </tr>
+            <tr>
+                <td><strong>4. Chi phí Triển khai: Phân hệ Contract Management</strong><br><span
+                        style="font-size: 8.5pt; color: #718096;">- Kế thừa nền tảng hạ tầng AI Hub lõi (Phần nền tảng
+                        hưởng mức phí $0 - No charge) + Triển khai giải pháp quản lý hợp đồng đa quốc gia cho diện rộng
+                        Global APAC (hơn 8 nước thành viên)</span></td>
+                <td>$60,000</td>
+                <td>$6,000<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td>$6,000<br><span style="font-size: 8.5pt; color: #718096;">(10% AMS)</span></td>
+                <td><strong>$72,000</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="alert-box">
+        <strong>Lưu ý quan trọng từ tài liệu tài chính:</strong> Chi phí vận hành hạ tầng đám mây (Cloud Infrastructure
+        running cost) là <strong>CỐ ĐỊNH</strong> và không tăng tiến khi tổ chức kích hoạt thêm một quốc gia thành viên
+        mới hoặc mở rộng thêm các kịch bản sử dụng (use cases) mới trên nền tảng. Mỗi quốc gia hoặc phân hệ bổ sung sau
+        này chỉ phát sinh chi phí cấu hình triển khai một lần duy nhất (one-time onboarding implementation cost).
+    </div>
+
+    <!-- 17. Missing Information / Ambiguities -->
+    <h2>17. Missing Information / Ambiguities</h2>
+    <p><em>(Danh mục các câu hỏi kỹ thuật trọng yếu và các điểm mơ hồ cần làm rõ trực tiếp với khách hàng trước khi tiến
+            hành viết mã nguồn và thiết kế chi tiết hệ thống)</em></p>
+    <ul>
+        <li><strong>Question 1 (Về phương thức kết nối SAP):</strong> Tài liệu ghi nhận hệ thống giao tiếp qua "Restful
+            API". Tuy nhiên, cấu trúc SAP ERP truyền thống thường sử dụng giao thức OData Services thông qua các hệ
+            thống trung gian Middleware như SAP PI/PO hoặc SAP Business Technology Platform (BTP). Khách hàng cần cung
+            cấp tài liệu đặc tả API chuẩn của hệ thống SAP hiện tại và thông số bảo mật liên quan.</li>
+        <li><strong>Question 2 (Về kịch bản đàm phán hợp đồng ngoài hệ thống):</strong> Tài liệu mô tả quy trình thương
+            thảo hợp đồng với đối tác bên ngoài diễn ra qua email. Khi đối tác gửi lại file chỉnh sửa, tệp tin đó có bắt
+            buộc phải giữ nguyên định dạng bản quét PDF hay không? Trường hợp đối tác trả về tệp Microsoft Word (.docx)
+            có bật tính năng theo dõi thay đổi (Track Changes) thì đường ống pipeline AI Hub sẽ xử lý như thế nào? Hệ
+            thống có module chuyển đổi định dạng tự động hay không?</li>
+        <li><strong>Question 3 (Về bản chất cơ chế Học máy - Learning Loop):</strong> Cần làm rõ cơ chế kỹ thuật của
+            "Learning Loop". Đây là quy trình thu thập dữ liệu hiệu chỉnh của người dùng để tiến hành Fine-tuning (Huấn
+            luyện lại định kỳ) các trọng số của mô hình AI lõi (Gemma/Qwen3), hay thực chất chỉ là cơ chế lưu trữ các bộ
+            quy tắc hiệu chỉnh vào cơ sở dữ liệu PostgreSQL để phục vụ kỹ thuật Dynamic Few-shot Prompting (nạp thêm ngữ
+            cảnh ví dụ vào Prompt khi gọi LLM)?</li>
+        <li><strong>Question 4 (Về giới hạn vật lý của tài liệu):</strong> Tài liệu xử lý đơn hàng (Module A) ghi rõ
+            giới hạn kích thước file PO là tối đa 20MB. Đối với phân hệ quản lý hợp đồng (Module B), giới hạn kích thước
+            file và số lượng trang tối đa (Maximum page limit) của một bộ hợp đồng thương mại là bao nhiêu để đảm bảo mô
+            hình LLM không vượt quá giới hạn cửa sổ ngữ cảnh (Context Window Limit)?</li>
+        <li><strong>Question 5 (Về quy trình phê duyệt quy tắc pháp lý):</strong> Khi Luật sư (Legal Counsel) tiến hành
+            thay đổi hoặc bổ sung một quy tắc rủi ro trên giao diện Rule Sets Admin Console, cấu hình đó có cần trải qua
+            một quy trình phê duyệt nội bộ cấp cao hơn (Approval Workflow cho Rule) hay không, hay hệ thống sẽ tự động
+            lưu và áp dụng ngay lập tức trực tiếp vào môi trường Production cho các hợp đồng đệ trình tiếp theo?</li>
+    </ul>
+
+    <!-- 18. Suggested Technical Implementation Plan -->
+    <h2>18. Suggested Technical Implementation Plan</h2>
+    <p>Dựa trên mối quan hệ phụ thuộc kỹ thuật của các cấu phần hệ thống được mô tả trong tài liệu, lộ trình triển khai
+        kỹ thuật được đề xuất phân rã theo mô hình cuốn chiếu như sau:</p>
+    <ul>
+        <li><strong>Giai đoạn 1: Triển khai Hạ tầng lõi và Nền tảng chia sẻ (Foundation & Shared Core Build)</strong>
+            <br><em>Phạm vi công việc:</em> Thiết lập vùng mạng an toàn trên Azure Singapore; Cấu hình và khởi tạo cụm
+            máy chủ Azure Kubernetes Service (AKS) có kích hoạt node GPU; Triển khai framework tăng tốc suy luận vLLM để
+            host mô hình lõi Gemma/Qwen3-VL; Khởi tạo cơ sở dữ liệu PostgreSQL và kích hoạt افزونه pgvector; Thiết lập
+            tích hợp phân hệ định danh Azure AD SSO; Xây dựng khung xương mã nguồn cho Business Control Portal (Web
+            Shell UI).
+            <br><em>Giả định (Assumption):</em> Khách hàng bàn giao đầy đủ quyền truy cập tài khoản Azure Subscription
+            quản trị trong tuần đầu tiên của dự án.
+        </li>
+        <li><strong>Giai đoạn 2: Phát triển và Triển khai Phân hệ Sales Order Automation (Module A)</strong>
+            <br><em>Phạm vi công việc:</em> Xây dựng cổng lắng nghe sự kiện Azure Logic Apps kết nối hòm thư Exchange;
+            Viết các Azure Functions thực hiện tiền xử lý ảnh và bóc tách trang PDF; Xây dựng đường ống AI Pipeline thực
+            hiện OCR trích xuất dữ liệu bảng biểu đơn PO; Phát triển thuật toán Semantic Mapping đối chiếu mã vật tư dựa
+            trên pgvector; Xây dựng giao diện hàng đợi soát lỗi vận hành (CS HITL Queue Dashboard); Phát triển cổng API
+            tích hợp đẩy dữ liệu sang phân hệ SAP SD. Tiến hành kiểm thử nghiệm (UAT) và triển khai Golive lần lượt cho
+            thị trường Nhật Bản và cấu hình add-on cho thị trường Thái Lan.
+        </li>
+        <li><strong>Giai đoạn 3: Phát triển và Triển khai Phân hệ Contract Management (Module B)</strong>
+            <br><em>Phạm vi công việc:</em> Kế thừa toàn bộ cụm máy chủ AKS AI lõi và cơ sở dữ liệu từ Giai đoạn 1; Phát
+            triển đường ống AI Pipeline phục vụ phân đoạn điều khoản hợp đồng (Clause Segmentation); Tích hợp bộ công cụ
+            Open Policy Agent (OPA) để thực thi logic Legal Rule Set; Xây dựng công cụ RAG tìm kiếm tiền lệ lịch sử;
+            Thiết kế và xây dựng giao diện làm việc chuyên dụng cho luật sư (Legal Workspace Split-View UI) hỗ trợ vẽ
+            overlay tọa độ highlight lỗi trên file PDF; Xây dựng module quản lý lịch sử phiên bản và thuật toán so sánh
+            văn bản (Text Diff Generation); Phát triển màn hình cấu hình quy tắc No-code Admin Console. Tiến hành chạy
+            thử nghiệm UAT với đội ngũ luật sư vùng tại Singapore và triển khai Rollout diện rộng cho hơn 8 quốc gia khu
+            vực APAC.
+        </li>
+    </ul>
+
+    <!-- FINAL IMPLEMENTATION UNDERSTANDING -->
+    <h2 style="page-break-before: always;">FINAL IMPLEMENTATION UNDERSTANDING</h2>
+    <p>Dưới góc nhìn tổng hòa của một Chuyên gia kiến trúc giải pháp và Trưởng nhóm kỹ thuật, bản chất cốt lõi của hệ
+        thống AI Hub Platform được định vị rõ nét như sau:</p>
+    <ul>
+        <li><strong>Hệ thống thực sự đang làm gì:</strong> Đây không phải là một hệ thống AI tự đưa ra quyết định thay
+            thế hoàn toàn con người, mà bản chất là một nền tảng <strong>Intelligent Document Processing (IDP) phối hợp
+                Workflow Automation dựa trên mức độ rủi ro</strong>. Hệ thống đóng vai trò như một bộ lọc thông minh
+            (Smart Filter) khổng lồ, tự động đọc, gán nhãn, cấu trúc hóa dữ liệu thô phi cấu trúc từ thế giới bên ngoài
+            và ép dữ liệu đó tuân thủ nghiêm ngặt theo các quy chuẩn vận hành nội bộ của Motul trước khi chuyển giao cho
+            con người xử lý nốt các phần việc quan trọng nhất.</li>
+        <li><strong>Vị trí của AI trong kiến trúc hệ thống:</strong> AI xuất hiện xuyên suốt tại 3 chốt chặn chiến lược:
+            Lớp tiếp nhận thị giác (VLM bóc tách chữ và layout bảng biểu từ file PDF), Lớp suy luận ngữ nghĩa (LLM dịch
+            nghĩa điều khoản và viết tóm tắt giải thích lý do rủi ro), và Lớp tra cứu thông minh (Semantic Search với
+            pgvector để tự động match mã vật tư SAP và tìm kiếm tiền lệ pháp lý trong quá khứ).</li>
+        <li><strong>Hợp phần khó khăn nhất khi triển khai thực tế:</strong>
+            <br>1. <em>Về mặt UI/UX:</em> Việc xây dựng giao diện <strong>Legal Workspace</strong> có khả năng hiển thị
+            mượt mà file PDF gốc trên trình duyệt web, đồng thời tính toán chính xác tọa độ ma trận từ kết quả phân tích
+            của AI để vẽ các hộp đồ họa (Bounding Box Overlay) đè trực tiếp và chính xác lên từng dòng chữ điều khoản
+            pháp lý, đảm bảo giao diện không bị lệch dòng khi phóng to/thu nhỏ tài liệu.
+            <br>2. <em>Về mặt xử lý AI:</em> Đảm bảo độ chính xác của mô hình VLM khi bóc tách các bảng danh mục sản
+            phẩm (Line items) đan xen nhiều ngôn ngữ đặc thù có cấu trúc chữ viết phức tạp như tiếng Thái Lan và tiếng
+            Nhật Bản (OCR chữ tiếng Thái thường rất dễ bị lỗi dính ký tự dấu trên dưới nếu độ phân giải của file PDF đầu
+            vào thấp hoặc bản fax bị mờ).
+        </li>
+        <li><strong>Hợp phần có khả năng tái sử dụng cao (Reusable Platform Capabilities):</strong> Toàn bộ hạ tầng lõi
+            AI Hub được xây dựng ở Giai đoạn 1 (Cụm máy chủ AKS GPU chạy mô hình VLM/LLM tập trung, cấu trúc cơ sở dữ
+            liệu PostgreSQL kết hợp افزونه pgvector, hệ thống định danh bảo mật và phân tách dữ liệu đa người thuê Azure
+            AD SSO). Đây là tài sản kiến trúc cốt lõi, đóng vai trò nền tảng để Motul dễ dàng cắm thêm các Module chức
+            năng C, D, E sau này (ví dụ: Tự động hóa hóa đơn nhà cung cấp, Rà soát hồ sơ nhân sự) mà không cần phải đầu
+            tư mua sắm lại máy chủ hay thiết lập lại nền tảng bảo mật từ đầu.</li>
+        <li><strong>Hợp phần mang tính đặc thù riêng biệt (Module-Specific Logic):</strong> Logic xử lý nghiệp vụ ở tầng
+            giao diện người dùng cuối hoàn toàn khác biệt giữa hai phân hệ. Phân hệ đơn hàng (Module A) tập trung vào
+            bài toán tối ưu hóa tốc độ và độ chính xác của các bảng ánh xạ mã vật tư (Data Mapping Matrix), nơi người
+            dùng CS chỉ cần xác nhận tính đúng đắn của dữ liệu để đẩy sang SAP. Ngược lại, Phân hệ hợp đồng (Module B)
+            tập trung vào bài toán tương tác văn bản sâu, quản lý lịch sử phiên bản phức tạp (Document Versioning Loop)
+            và đòi hỏi một không gian làm việc chuyên sâu cho luật sư cùng công cụ quản trị luật No-code linh hoạt. Khối
+            logic này bắt buộc phải được phát triển thành các ứng dụng nghiệp vụ độc lập chạy trên nền hạ tầng chia sẻ
+            chung.</li>
+    </ul>
+
+</body>
+
+</html>

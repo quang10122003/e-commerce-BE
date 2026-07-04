@@ -1,0 +1,417 @@
+GIAI THICH LUONG REQUEST TRONG SPRING SECURITY
+==============================================
+
+File lien quan chinh:
+- SecurityConfig.java
+- JwtAuthFilter.java
+- RestAuthenticationEntryPoint.java
+- ApplicationConfig.java
+- AuthController.java
+- AuthService.java
+- UserDetailsServiceCustom.java
+- AuthUtil.java
+
+
+1. Cau hinh tong quan trong SecurityConfig
+------------------------------------------
+
+Trong SecurityConfig co bean:
+
+public SecurityFilterChain filterChain(HttpSecurity http)
+
+Bean nay tao security chain cho tat ca request vao app.
+
+Nhung cau hinh quan trong:
+
+1. cors(Customizer.withDefaults())
+   Bat CORS theo bean CorsConfigurationSource trong ApplicationConfig.
+
+2. csrf(csrf -> csrf.disable())
+   Tat CSRF vi app dang dung JWT stateless, khong dung session/cookie form login mac dinh.
+
+3. sessionManagement(... STATELESS)
+   Noi voi Spring Security rang server khong luu session dang nhap.
+   Moi request muon vao API private phai tu mang token.
+
+4. authenticationProvider(authenticationProvider)
+   Gan AuthenticationProvider tu ApplicationConfig.
+   Provider nay la DaoAuthenticationProvider, dung de check email/password khi login.
+
+5. exceptionHandling(...)
+   Cau hinh noi tra loi khi co loi security:
+
+   - authenticationEntryPoint(restAuthenticationEntryPoint)
+     Duoc goi khi request chua dang nhap hoac token khong hop le ma endpoint yeu cau dang nhap.
+     Response thuong la 401 Unauthorized.
+
+   - accessDeniedHandler(...)
+     Duoc goi khi user da dang nhap roi nhung khong du quyen.
+     Response la 403 ACCESS_DENIED.
+
+6. authorizeHttpRequests(...)
+   Chia endpoint thanh public va private.
+
+   - OPTIONS /** duoc permitAll, dung cho CORS preflight.
+   - PUBLIC_ENDPOINTS duoc permitAll.
+   - Con lai anyRequest().authenticated(), bat buoc phai dang nhap.
+
+7. addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+   Them JwtAuthFilter vao truoc UsernamePasswordAuthenticationFilter.
+   Nghia la truoc khi Spring Security xu ly authentication mac dinh,
+   app se tu doc JWT trong Authorization header de set user vao SecurityContext.
+
+
+2. Danh sach public endpoint
+----------------------------
+
+Trong SecurityConfig:
+
+private static final String[] PUBLIC_ENDPOINTS = {
+        "/api/auth/login",
+        "/api/auth/signup",
+        "/api/auth/refresh-token",
+        "/api/auth/validate-token",
+        "/api/cloudinary/upload-images",
+        "/api/products/**",
+        "/api/categories",
+};
+
+Nhung endpoint nay khong bat buoc dang nhap.
+
+Luu y: Public endpoint van di qua security chain, nhung duoc phep vao controller
+ma khong can Authentication trong SecurityContext.
+
+
+3. Luong request public
+-----------------------
+
+Vi du:
+- GET /api/categories
+- GET /api/products
+- POST /api/auth/login
+- POST /api/auth/signup
+
+Luong di:
+
+Client
+ -> SecurityFilterChain
+ -> JwtAuthFilter
+ -> authorizeHttpRequests thay endpoint nam trong PUBLIC_ENDPOINTS
+ -> Cho vao Controller
+
+Chi tiet trong JwtAuthFilter:
+
+JwtAuthFilter co ham shouldNotFilter(request).
+
+Neu request la:
+- OPTIONS
+- /api/auth/login
+- /api/auth/signup
+- /api/auth/refresh-token
+- /api/auth/validate-token
+
+thi shouldNotFilter tra true, JwtAuthFilter se bo qua, khong chay doFilterInternal.
+
+Vi du login:
+
+POST /api/auth/login
+ -> vao SecurityFilterChain
+ -> JwtAuthFilter.shouldNotFilter() tra true
+ -> khong parse JWT
+ -> vi /api/auth/login nam trong PUBLIC_ENDPOINTS nen duoc permitAll
+ -> vao AuthController.login()
+ -> goi AuthService.login()
+
+Vi du GET /api/categories:
+
+GET /api/categories
+ -> khong nam trong shouldNotFilter cua JwtAuthFilter
+ -> JwtAuthFilter.doFilterInternal() van chay
+ -> Neu khong co Authorization header thi filterChain.doFilter()
+ -> /api/categories nam trong PUBLIC_ENDPOINTS nen duoc permitAll
+ -> vao CategoryController
+
+Nghia la: public endpoint khong nhat thiet bi skip JwtAuthFilter.
+Chi cac endpoint duoc liet ke trong shouldNotFilter moi skip filter.
+Con cac public endpoint khac van qua filter, nhung khong co token thi filter cho di tiep.
+
+
+4. Luong request private
+------------------------
+
+Private endpoint la moi endpoint khong nam trong PUBLIC_ENDPOINTS.
+
+Vi du:
+- GET /api/auth/me
+- Cac API admin/order/cart neu khong duoc khai bao public
+
+Luong khi KHONG gui token:
+
+Client
+ -> SecurityFilterChain
+ -> JwtAuthFilter.doFilterInternal()
+ -> Khong co Authorization: Bearer ...
+ -> filterChain.doFilter()
+ -> authorizeHttpRequests gap .anyRequest().authenticated()
+ -> Khong co Authentication trong SecurityContext
+ -> Goi RestAuthenticationEntryPoint.commence()
+ -> Tra 401 Unauthorized
+
+Luong khi CO gui token hop le:
+
+Client
+ -> SecurityFilterChain
+ -> JwtAuthFilter.doFilterInternal()
+ -> Doc Authorization header
+ -> Lay token sau chu "Bearer "
+ -> AuthUtil.extractEmail(token)
+ -> UserDetailsServiceCustom.loadUserByUsername(email)
+ -> UserRepo.findByEmailIgnoreCase(email)
+ -> Tao UserDetails kem authorities/role
+ -> Kiem tra user co bi khoa khong
+ -> AuthUtil.isAccessTokenValid(token, user)
+ -> Tao UsernamePasswordAuthenticationToken
+ -> Set vao SecurityContextHolder
+ -> filterChain.doFilter()
+ -> authorizeHttpRequests thay da authenticated
+ -> Cho vao Controller
+
+Luc nay trong controller/service co the lay user hien tai bang:
+
+SecurityContextHolder.getContext().getAuthentication()
+
+Vi du AuthService.me() dung cach nay.
+
+
+5. Luong login chi tiet
+-----------------------
+
+Endpoint:
+
+POST /api/auth/login
+
+Luong:
+
+1. Request vao SecurityFilterChain.
+
+2. JwtAuthFilter.shouldNotFilter(request) chay truoc.
+   Vi servletPath la /api/auth/login nen shouldNotFilter tra true.
+   Ket qua: JwtAuthFilter khong xu ly request login, khong can token.
+
+3. SecurityConfig.authorizeHttpRequests thay /api/auth/login nam trong PUBLIC_ENDPOINTS.
+   Ket qua: permitAll, cho vao controller.
+
+4. AuthController.login(LoginRequest request) duoc goi.
+
+5. AuthController goi:
+
+   authService.login(request)
+
+6. AuthService.login() lam cac viec:
+
+   - normalizeEmail(request.getEmail())
+     Chuan hoa email: trim va lowercase.
+
+   - normalizePassword(request.getPassword())
+     Hien tai tra lai password nhu cu.
+
+   - authenticationManager.authenticate(
+         new UsernamePasswordAuthenticationToken(email, password)
+     )
+
+     Dong nay moi la cho check email/password that su.
+
+7. AuthenticationManager dung AuthenticationProvider da cau hinh trong ApplicationConfig.
+
+   Trong ApplicationConfig:
+
+   - authenticationProvider(...) tao DaoAuthenticationProvider
+   - DaoAuthenticationProvider dung UserDetailsServiceCustom
+   - DaoAuthenticationProvider dung PasswordEncoder la BCryptPasswordEncoder
+
+8. DaoAuthenticationProvider goi:
+
+   UserDetailsServiceCustom.loadUserByUsername(email)
+
+9. UserDetailsServiceCustom lam:
+
+   - userRepo.findByEmailIgnoreCase(email)
+   - Neu khong thay user: nem UsernameNotFoundException
+   - Neu thay user: tao org.springframework.security.core.userdetails.User
+     voi username, password, authorities, accountLocked
+
+10. DaoAuthenticationProvider so sanh password request voi password hash trong DB.
+    No dung BCryptPasswordEncoder.matches(rawPassword, passwordHash).
+
+11. Neu email/password sai:
+    - Spring Security nem BadCredentialsException
+    - GlobalExceptionHandler.handleBadCredentials() tra INVALID_CREDENTIALS
+
+12. Neu dung:
+    - AuthService.login() lay UserDetails tu authentication.getPrincipal()
+    - Query lai User entity trong DB bang userRepo.findByEmailIgnoreCase()
+    - Goi assertUserNotLocked(user)
+    - Goi AuthUtil.generateAccessToken(user)
+    - Goi AuthUtil.generateRefreshToken(user)
+    - Tra ApiResponse.success kem access token va refresh token
+
+
+6. AuthUtil lam gi
+------------------
+
+AuthUtil la class xu ly JWT.
+
+Nhung ham chinh:
+
+1. generateAccessToken(User user)
+   Tao access token.
+   Token co subject la email va claims:
+   - userId
+   - role
+   - fullName
+   - tokenType = access
+
+2. generateRefreshToken(User user)
+   Tao refresh token.
+   Token co tokenType = refresh.
+
+3. extractEmail(String token)
+   Parse token va lay subject, tuc email.
+
+4. extractTokenType(String token)
+   Lay claim tokenType.
+
+5. isAccessTokenValid(String token, UserDetails userDetails)
+   Check:
+   - email trong token bang username cua user
+   - tokenType la access
+   - token chua het han
+
+6. isRefreshTokenValid(String token, UserDetails userDetails)
+   Tuong tu access token, nhung tokenType phai la refresh.
+
+
+7. RestAuthenticationEntryPoint duoc goi khi nao
+------------------------------------------------
+
+RestAuthenticationEntryPoint.commence() duoc goi khi Spring Security thay request
+can dang nhap nhung hien tai khong co Authentication hop le.
+
+Vi du:
+
+1. Goi private API khong gui token.
+2. Goi private API gui token sai/het han, JwtAuthFilter khong set duoc Authentication.
+3. Token dung format nhung user khong hop le, JwtAuthFilter clear SecurityContext.
+
+Response se la 401 Unauthorized.
+
+Day la loi "chua xac thuc", khac voi "da dang nhap nhung khong du quyen".
+
+
+8. AccessDeniedHandler duoc goi khi nao
+---------------------------------------
+
+AccessDeniedHandler trong SecurityConfig duoc goi khi:
+
+- User da authenticated roi
+- Nhung khong co quyen truy cap resource/method do
+
+Vi du neu sau nay co:
+
+@PreAuthorize("hasRole('ADMIN')")
+
+ma user login role USER goi vao, thi day la da dang nhap nhung khong du quyen.
+Luc do tra 403 ACCESS_DENIED, khong phai 401 Unauthorized.
+
+
+9. Tai sao truoc day loi SQL bi tra Unauthorized
+------------------------------------------------
+
+Truoc day JwtAuthFilter co dang:
+
+try {
+    // parse token, load user, check token
+} catch (Exception e) {
+    SecurityContextHolder.clearContext();
+}
+
+Van de la catch Exception bat tat ca moi loi:
+
+- Token sai
+- Token het han
+- Loi SQL khi load user
+- Loi mapping role
+- Loi runtime bat ky
+
+Khi loi SQL xay ra trong luc filter load user, catch Exception da nuot loi do
+va clear SecurityContext.
+
+Sau do request di tiep, Spring Security thay endpoint private ma khong co Authentication,
+nen goi RestAuthenticationEntryPoint va tra 401 Unauthorized.
+
+Vay loi goc la SQL, nhung response lai thanh Unauthorized.
+
+
+10. Sau khi sua JwtAuthFilter
+-----------------------------
+
+JwtAuthFilter hien tai tach loi thanh 2 nhom:
+
+1. Loi token/auth that su:
+   - JwtException
+   - IllegalArgumentException khi parse token
+   - UsernameNotFoundException
+
+   Nhung loi nay clear SecurityContext va de Spring Security xu ly 401.
+
+2. Loi he thong:
+   - SQL error
+   - DB mapping error
+   - Runtime exception khac khi load user/role
+
+   Nhung loi nay duoc dua vao:
+
+   handlerExceptionResolver.resolveException(request, response, null, e)
+
+   Sau do GlobalExceptionHandler se xu ly va tra INTERNAL_SERVER_ERROR 500.
+
+Muc tieu: token sai thi tra 401, con code/DB loi thi tra 500, khong bi gan nham thanh khong co quyen.
+
+
+11. Tom tat ngan
+----------------
+
+Public request:
+
+Client
+ -> SecurityFilterChain
+ -> Co the qua JwtAuthFilter hoac bi shouldNotFilter skip
+ -> PUBLIC_ENDPOINTS permitAll
+ -> Controller
+
+Private request co token dung:
+
+Client
+ -> JwtAuthFilter
+ -> AuthUtil parse token
+ -> UserDetailsServiceCustom load user
+ -> AuthUtil validate token
+ -> Set Authentication vao SecurityContext
+ -> Controller
+
+Private request khong co token/token sai:
+
+Client
+ -> JwtAuthFilter khong set Authentication
+ -> anyRequest().authenticated() chan
+ -> RestAuthenticationEntryPoint
+ -> 401 Unauthorized
+
+Private request co token nhung gap loi SQL khi load user:
+
+Client
+ -> JwtAuthFilter
+ -> Loi SQL
+ -> HandlerExceptionResolver
+ -> GlobalExceptionHandler
+ -> 500 Internal Server Error
