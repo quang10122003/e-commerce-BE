@@ -2,7 +2,12 @@ HELP.md
 # local environment variables
 .env
 .env.local
-src/.env
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env.sample
+
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
