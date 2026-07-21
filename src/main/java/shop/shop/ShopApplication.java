@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+
 @SpringBootApplication
 public class ShopApplication {
-
 	public static void main(String[] args) {
 		loadEnvFile();
 		SpringApplication.run(ShopApplication.class, args);

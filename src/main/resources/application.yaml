@@ -1,4 +1,10 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: shop
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   security:
     oauth2:
       client:
@@ -19,24 +25,6 @@ spring:
             # endpoint để thấy thông tin email và profile của người dùng
             user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
             user-name-attribute: sub
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: ${USER_MQ}
-    password: ${PASSWORD_MQ}
-
-  config:
-    import: optional:file:.env[.properties]
-
-  application:
-    name: shop
-
-  datasource:
-    url: jdbc:mysql://${URL_DATABASE}
-    username: ${USERNAME_DATABASE}
-    password: ${PASSWORD_DATABASE}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
   servlet:
     multipart:
       max-file-size: 20MB
@@ -48,7 +36,7 @@ spring:
     api-secret: ${CLOUDINARY_API_SECRET}
 
 app:
-  doaminFE: http://localhost:3000
+  frontend-url: ${DOMAIN:http://localhost:3000}
 
   jwt:
     secret: ${JWT_SECRET}

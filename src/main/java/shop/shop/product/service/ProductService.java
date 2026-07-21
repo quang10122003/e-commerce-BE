@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -38,9 +39,12 @@ import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.CloudinaryService;
+import shop.shop.integration.redis.service.CatalogCacheService;
+import shop.shop.integration.redis.service.CartCacheService;
 import shop.shop.product.dto.response.ProductSummaryResponse;
 import shop.shop.product.dto.response.Productdetail;
 import shop.shop.common.ProductStatus;
+import shop.shop.common.cache.CacheKeys;
 import shop.shop.product.entity.Product;
 import shop.shop.product.mapper.ProductMapper;
 import shop.shop.product.repository.ProductRepository;
@@ -49,17 +53,41 @@ import shop.shop.productImage.entity.ProductImageEntity;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ProductService {
 
-     ProductRepository productRepository;
-     ProductMapper productMapper;
-     AdminProductMapper adminProductMapper;
-     CartLineItemRepository cartLineItemRepository;
-     CloudinaryService cloudinaryService;
-     CategoryRepository categoryRepository;
-     CurrentUserClass currentUserClass;
-     Logger logger = LoggerFactory.getLogger(this.getClass());
+    ProductRepository productRepository;
+    ProductMapper productMapper;
+    AdminProductMapper adminProductMapper;
+    CartLineItemRepository cartLineItemRepository;
+    CloudinaryService cloudinaryService;
+    CategoryRepository categoryRepository;
+    CurrentUserClass currentUserClass;
+    CatalogCacheService catalogCacheService;
+    CartCacheService cartCacheService;
+    Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    // Lấy danh sách sản phẩm public dạng phân trang, cache theo bộ lọc và paging.
+    public PagedResponse<ProductSummaryResponse> getActiveProductsPaged(Long categoryId, String search,Pageable pageable) {
+        String cacheKey = CacheKeys.productList(
+                categoryId == null ? null : categoryId.toString(),
+                search,
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort().toString());
+
+        PagedResponse<ProductSummaryResponse> cachedProducts = catalogCacheService.get(cacheKey);
+        if (cachedProducts != null) {
+            return cachedProducts;
+        }
+
+        Page<ProductSummaryResponse> activeProducts = getActiveProducts(categoryId, search, pageable);
+        PagedResponse<ProductSummaryResponse> pagedResponse = PagedResponse.from(activeProducts);
+
+        catalogCacheService.set(cacheKey, pagedResponse, Duration.ofHours(1));
+
+        return pagedResponse;
+    }
 
     public Page<ProductSummaryResponse> getActiveProducts(Pageable pageable) {
         return productRepository.findByStatus(ProductStatus.ACTIVE, pageable)
@@ -88,16 +116,37 @@ public class ProductService {
     }
 
     public List<ProductSummaryResponse> getTopSelling() {
-        return productRepository.findTop6ByStatusOrderByPurchasesDescCreatedAtDesc(ProductStatus.ACTIVE)
+        String cacheKey = CacheKeys.productTopSelling();
+        
+        List<ProductSummaryResponse> cachedProducts = catalogCacheService.get(cacheKey);
+        if (cachedProducts != null) {
+            return cachedProducts;
+        }
+        List<ProductSummaryResponse> products = productRepository
+                .findTop6ByStatusOrderByPurchasesDescCreatedAtDesc(ProductStatus.ACTIVE)
                 .stream()
                 .map(productMapper::toSummary)
                 .toList();
+
+        catalogCacheService.set(cacheKey, products, Duration.ofMinutes(15));
+
+        return products;
     }
 
     public Productdetail getProductById(Long id) {
-        return productRepository.findDetailById(id)
-                .map(productMapper::toDetail)
+        String cacheKey  = CacheKeys.productDetail(id);
+        Productdetail cachedProduct  = catalogCacheService.get(cacheKey);
+        if (cachedProduct != null) {
+            return cachedProduct;
+        }
+
+        Productdetail productDetail = productRepository.findDetailById(id)
+            .map(productMapper::toDetail)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
+        
+        catalogCacheService.set(cacheKey, productDetail, Duration.ofHours(1));
+
+        return productDetail;
     }
 
     // Chuan hoa chuoi.
@@ -127,21 +176,40 @@ public class ProductService {
         return value != null && value.stripTrailingZeros().scale() > 0;
     }
 
+    // Lấy danh sách sản phẩm admin, cache theo bộ lọc/paging để giảm tải query.
     public ApiResponse<AdminProductListResponse> getAdminProducts(Long catagoryId, String search, String status,
             Pageable pageable) {
         String normalizedSearch = normalize(search);
         ProductStatus normalizedStatus = normalizeStatus(status);
+        String cacheKey = CacheKeys.adminProductList(
+            catagoryId,
+            normalizedSearch,
+            normalizedStatus == null ? null : normalizedStatus.name(),
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            pageable.getSort().toString());
 
-        Page<Product> productPage = productRepository.findAdminProducts(catagoryId, normalizedSearch, normalizedStatus, pageable);
+        ApiResponse<AdminProductListResponse> cachedResponse = catalogCacheService.get(cacheKey);
+        if (cachedResponse != null) {
+            return cachedResponse;
+        }
+
+        Page<Product> productPage = productRepository.findAdminProducts(catagoryId, normalizedSearch, normalizedStatus,
+                pageable);
         Map<Long, Product> productsWithImages = findProductsWithImages(productPage.getContent());
 
         Page<AdminProductSummaryResponse> products = productPage
-                .map(product -> adminProductMapper.toSummary(productsWithImages.getOrDefault(product.getId(), product)));
+                .map(product -> adminProductMapper
+                        .toSummary(productsWithImages.getOrDefault(product.getId(), product)));
 
-        return ApiResponse.success("Lấy danh sách sản phẩm thành công",
-                AdminProductListResponse.builder()
-                        .products(PagedResponse.from(products))
-                        .build());
+    ApiResponse<AdminProductListResponse> response = ApiResponse.success("Lấy danh sách sản phẩm thành công",
+        AdminProductListResponse.builder()
+            .products(PagedResponse.from(products))
+            .build());
+
+    catalogCacheService.set(cacheKey, response, Duration.ofHours(1));
+
+    return response;
     }
 
     // Lấy thêm collection images cho các sản phẩm trong page hiện tại.
@@ -167,12 +235,15 @@ public class ProductService {
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
-        
+
         ProductStatus beforeStatus = product.getStatus();
         product.setStatus(status);
+        catalogCacheService.registerProductCacheDeleteAfterCommit(productId);
+        cartCacheService.registerCartCacheDeleteAfterCommit();
 
-        logger.info("admin voi id:{} vừa cập nhật trang thái sản phẩm {} -> {} với sản phẩm id:{} ", currentUserClass.getCurrentUser().getId(),beforeStatus,status,productId);
-        
+        logger.info("admin voi id:{} vừa cập nhật trang thái sản phẩm {} -> {} với sản phẩm id:{} ",
+                currentUserClass.getCurrentUser().getId(), beforeStatus, status, productId);
+
         return ApiResponse.success("Cap nhat trang thai san pham thanh cong",
                 AdminProductStatusResponse.builder()
                         .productId(product.getId())
@@ -185,7 +256,7 @@ public class ProductService {
             MultipartFile thumbnail, List<MultipartFile> images) {
         validateCreateProductRequest(request, thumbnail);
 
-       // Kiem tra danh muc cua san pham duoc tao co ton tai hay khong.
+        // Kiem tra danh muc cua san pham duoc tao co ton tai hay khong.
         if (!categoryRepository.existsById(request.getCategoryId())) {
             throw new ApiError(ErrorCode.CATEGORY_NOT_FOUND);
         }
@@ -193,7 +264,7 @@ public class ProductService {
         // Luu danh sach anh da upload de don dep neu upload loi hoac DB rollback.
         List<CloudinaryImage> uploadedCloudinaryImages = new ArrayList<>();
 
-        CloudinaryImage thumbnailImage ;
+        CloudinaryImage thumbnailImage;
 
         List<CloudinaryImage> uploadedImages;
 
@@ -211,12 +282,14 @@ public class ProductService {
             uploadedCloudinaryImages.addAll(uploadedImages);
         } catch (RuntimeException ex) {
             // Neu tai anh len Cloudinary loi thi xoa cac anh da upload len Cloudinary.
-            logger.error("có lỗi trong quá trình tải ảnh lên Cloudinary trong quá trình tạo sản phẩm:{}",ex.getMessage());
+            logger.error("có lỗi trong quá trình tải ảnh lên Cloudinary trong quá trình tạo sản phẩm:{}",
+                    ex.getMessage());
             cleanupUploadedImages(uploadedCloudinaryImages);
             throw ex;
         }
 
-        // Neu DB rollback sau khi upload thanh cong, xoa lai anh vua day len Cloudinary.
+        // Neu DB rollback sau khi upload thanh cong, xoa lai anh vua day len
+        // Cloudinary.
         registerUploadedImageCleanupOnRollback(uploadedCloudinaryImages);
 
         Product product = productMapper.toProduct(request);
@@ -228,25 +301,33 @@ public class ProductService {
         product.setImages(toProductImageEntities(uploadedImages, product));
 
         Product savedProduct = productRepository.save(product);
-        logger.info("admin với với id:{} và username: {} đã thêm 1 sản phẩm mới", currentUserClass.getCurrentUser().getId(),
+
+        catalogCacheService.registerProductCacheDeleteAfterCommit(savedProduct.getId());
+        cartCacheService.registerCartCacheDeleteAfterCommit();
+
+        logger.info("admin với với id:{} và username: {} đã thêm 1 sản phẩm mới",
+                currentUserClass.getCurrentUser().getId(),
                 currentUserClass.getCurrentUser().getEmail());
         return ApiResponse.success("Them san pham thanh cong", adminProductMapper.toSummary(savedProduct));
     }
 
     @Transactional
     public ApiResponse<AdminProductSummaryResponse> updateProduct(Long productId, AdminUpdateProductRequest request) {
-        // Lay product kem category va images de cap nhat thong tin, them anh, xoa anh trong cung transaction.
+        // Lay product kem category va images de cap nhat thong tin, them anh, xoa anh
+        // trong cung transaction.
         Product product = productRepository.findDetailById(productId)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // Kiem tra cac truong neu admin co truyen; request null van hop le neu chi muon giu nguyen.
+        // Kiem tra cac truong neu admin co truyen; request null van hop le neu chi muon
+        // giu nguyen.
         validateUpdateProductRequest(request);
         validateProductVersion(product, request);
 
-       // Anh moi cua san pham duoc upload len Cloudinary; bien nay dung de rollback.
+        // Anh moi cua san pham duoc upload len Cloudinary; bien nay dung de rollback.
         List<CloudinaryImage> uploadedCloudinaryImages = new ArrayList<>();
 
-       // Anh can xoa cua san pham sau khi cap nhat thanh cong; bien nay dung de xoa anh tren Cloudinary.
+        // Anh can xoa cua san pham sau khi cap nhat thanh cong; bien nay dung de xoa
+        // anh tren Cloudinary.
         List<String> publicIdsToDeleteAfterCommit = new ArrayList<>();
 
         // Dung MapStruct de cap nhat cac truong co ban.
@@ -280,12 +361,14 @@ public class ProductService {
 
             // Neu co anh phu moi thi upload va them vao collection images cua product.
             List<CloudinaryImage> uploadedImages = uploadProductImages(request == null ? null : request.getImages());
-              // Them vao bien de rollback.
+            // Them vao bien de rollback.
             uploadedCloudinaryImages.addAll(uploadedImages);
             // Them anh moi vao DB.
             addProductImages(product, uploadedImages);
         } catch (RuntimeException ex) {
-            logger.error("admin voi id: {} chỉnh sửa sản phẩm id:{} nhưng có lỗi trong quá trình update ảnh lên Cloudinary",currentUserClass.getCurrentUser().getId(),productId);
+            logger.error(
+                    "admin voi id: {} chỉnh sửa sản phẩm id:{} nhưng có lỗi trong quá trình update ảnh lên Cloudinary",
+                    currentUserClass.getCurrentUser().getId(), productId);
             // Neu loi trong qua trinh upload anh thi xoa cac anh vua upload len Cloudinary.
             cleanupUploadedImages(uploadedCloudinaryImages);
             throw ex;
@@ -298,12 +381,16 @@ public class ProductService {
         registerProductImageCleanup(publicIdsToDeleteAfterCommit.stream().distinct().toList());
 
         Product savedProduct = productRepository.save(product);
-        logger.info("admin với id: {} cập nhật sản phẩm với id:{} thành công",currentUserClass.getCurrentUser().getId(),productId);
+        catalogCacheService.registerProductCacheDeleteAfterCommit(savedProduct.getId());
+        cartCacheService.registerCartCacheDeleteAfterCommit();
+        logger.info("admin với id: {} cập nhật sản phẩm với id:{} thành công",
+                currentUserClass.getCurrentUser().getId(), productId);
 
         return ApiResponse.success("Cap nhat san pham thanh cong", adminProductMapper.toSummary(savedProduct));
     }
 
-    // Kiem tra update dang partial: truong nao null thi xem nhu khong cap nhat truong do.
+    // Kiem tra update dang partial: truong nao null thi xem nhu khong cap nhat
+    // truong do.
     private void validateUpdateProductRequest(AdminUpdateProductRequest request) {
         if (request == null) {
             return;
@@ -321,7 +408,8 @@ public class ProductService {
         }
     }
 
-    // Bat buoc client gui version hien tai; version cu hoac thieu version se khong duoc cap nhat.
+    // Bat buoc client gui version hien tai; version cu hoac thieu version se khong
+    // duoc cap nhat.
     private void validateProductVersion(Product product, AdminUpdateProductRequest request) {
         if (request == null || request.getVersion() == null) {
             throw new ApiError(ErrorCode.BAD_REQUEST, "Version san pham khong duoc de trong");
@@ -333,10 +421,11 @@ public class ProductService {
         }
     }
 
-    // Tim anh phu co URL trung chinh xac voi deleteImageUrls, lay publicId de xoa Cloudinary sau commit.
+    // Tim anh phu co URL trung chinh xac voi deleteImageUrls, lay publicId de xoa
+    // Cloudinary sau commit.
     private void removeProductImagesByUrl(Product product, List<String> deleteImageUrls,
             List<String> publicIdsToDeleteAfterCommit) {
-                // Khong co anh can xoa hoac san pham khong co anh.
+        // Khong co anh can xoa hoac san pham khong co anh.
         if (deleteImageUrls == null || deleteImageUrls.isEmpty()
                 || product.getImages() == null || product.getImages().isEmpty()) {
             return;
@@ -348,7 +437,7 @@ public class ProductService {
                 .filter(url -> url != null)
                 .toList());
 
-                // Kiem tra danh sach co rong khong.
+        // Kiem tra danh sach co rong khong.
         if (normalizedUrls.isEmpty()) {
             return;
         }
@@ -359,14 +448,16 @@ public class ProductService {
                 return false;
             }
 
-            // Luu publicId truoc khi xoa anh trong DB de con xoa file tren Cloudinary sau commit.
+            // Luu publicId truoc khi xoa anh trong DB de con xoa file tren Cloudinary sau
+            // commit.
 
             addPublicId(publicIdsToDeleteAfterCommit, image.getPublicIdUrl());
             return true;
         });
     }
 
-    // Them cac anh vua upload vao product; cascade ALL se luu ProductImageEntity khi save product.
+    // Them cac anh vua upload vao product; cascade ALL se luu ProductImageEntity
+    // khi save product.
     private void addProductImages(Product product, List<CloudinaryImage> uploadedImages) {
         if (uploadedImages == null || uploadedImages.isEmpty()) {
             return;
@@ -404,7 +495,8 @@ public class ProductService {
         return cloudinaryService.uploadImages(images, "products");
     }
 
-    // Chuyen ket qua upload Cloudinary thanh entity anh phu va gan nguoc product de cascade save.
+    // Chuyen ket qua upload Cloudinary thanh entity anh phu va gan nguoc product de
+    // cascade save.
     private List<ProductImageEntity> toProductImageEntities(List<CloudinaryImage> images, Product product) {
         return images.stream()
                 .map(image -> {
@@ -453,39 +545,48 @@ public class ProductService {
         }
     }
 
-    // Xoa san pham cho admin, dong thoi don cart item va len lich xoa anh Cloudinary.
+    // Xoa san pham cho admin, dong thoi don cart item va len lich xoa anh
+    // Cloudinary.
     @Transactional
     public ApiResponse<Void> deleteProduct(Long productId) {
         Product product = findProduct(productId);
 
         deleteProductCore(product);
-        logger.info("admin với id:{} xóa sản phẩm id:{} thành công",currentUserClass.getCurrentUser().getId(),productId);
+        logger.info("admin với id:{} xóa sản phẩm id:{} thành công", currentUserClass.getCurrentUser().getId(),
+                productId);
 
         return ApiResponse.success("Xoa san pham thanh cong voi id: " + productId, null);
     }
 
-    // Tim san pham kem danh sach anh de phuc vu nghiep vu xoa va don anh Cloudinary.
+    // Tim san pham kem danh sach anh de phuc vu nghiep vu xoa va don anh
+    // Cloudinary.
     private Product findProduct(Long productId) {
         return productRepository.findDetailById(productId)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
-    // Lay toan bo san pham thuoc mot danh muc, kem anh phu de xoa danh muc co the tai su dung logic xoa san pham.
+    // Lay toan bo san pham thuoc mot danh muc, kem anh phu de xoa danh muc co the
+    // tai su dung logic xoa san pham.
     public List<Product> findProductsByCategoryId(Long categoryId) {
         return productRepository.findByCategory_Id(categoryId);
     }
 
-    // Phan nghiep vu xoa san pham dung chung cho xoa san pham rieng le va xoa danh muc.
-    // Ham nay don cart item, xoa product trong DB va chi xoa anh Cloudinary sau khi transaction commit.
+    // Phan nghiep vu xoa san pham dung chung cho xoa san pham rieng le va xoa danh
+    // muc.
+    // Ham nay don cart item, xoa product trong DB va chi xoa anh Cloudinary sau khi
+    // transaction commit.
     public void deleteProductCore(Product product) {
         List<String> publicIds = collectProductImagePublicIds(product);
 
         cartLineItemRepository.deleteByProduct_Id(product.getId());
         productRepository.delete(product);
         registerProductImageCleanup(publicIds);
+        catalogCacheService.registerProductCacheDeleteAfterCommit(product.getId());
+        cartCacheService.registerCartCacheDeleteAfterCommit();
     }
 
-    // Gom publicId cua thumbnail va cac anh phu de xoa tren Cloudinary sau khi xoa DB thanh cong.
+    // Gom publicId cua thumbnail va cac anh phu de xoa tren Cloudinary sau khi xoa
+    // DB thanh cong.
     private List<String> collectProductImagePublicIds(Product product) {
         List<String> publicIds = new ArrayList<>();
 
@@ -507,9 +608,16 @@ public class ProductService {
         }
     }
 
-    // Chi xoa anh tren Cloudinary sau khi transaction DB commit, tranh mat anh neu DB rollback.
+    // Chi xoa anh tren Cloudinary sau khi transaction DB commit, tranh mat anh neu
+    // DB rollback.
     private void registerProductImageCleanup(List<String> publicIds) {
         if (publicIds.isEmpty()) {
+            return;
+        }
+
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            logger.info("database commit thành công xóa ảnh trên Cloudinary");
+            cloudinaryService.deleteImage(publicIds);
             return;
         }
 

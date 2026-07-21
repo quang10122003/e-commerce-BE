@@ -22,7 +22,7 @@ public class ResendService {
 
     @Value("${app.resend.resend_key}")
     String apiKey;
-    @Value("${app.doaminFE}")
+    @Value("${app.frontend-url}")
     String domain;
 
     // gửi mail

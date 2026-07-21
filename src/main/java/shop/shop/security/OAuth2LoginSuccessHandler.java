@@ -27,7 +27,7 @@ import shop.shop.common.dto.response.ApiResponse;
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     AuthService authService;
-    @Value("${app.doaminFE}")
+    @Value("${app.frontend-url}")
     @NonFinal
     String frontendUrl;
 

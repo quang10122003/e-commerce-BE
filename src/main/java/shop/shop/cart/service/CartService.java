@@ -4,9 +4,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import shop.shop.cart.dto.request.AddCartItemRequest;
@@ -21,15 +18,18 @@ import shop.shop.cart.entity.CartLineItem;
 import shop.shop.cart.mapper.CartMapper;
 import shop.shop.cart.repository.CartLineItemRepository;
 import shop.shop.cart.repository.CartRepository;
+import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
+import shop.shop.integration.redis.service.CartCacheService;
 import shop.shop.product.entity.Product;
 import shop.shop.common.ProductStatus;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +46,23 @@ public class CartService {
     ProductRepository productRepository;
     CurrentUserClass currentUserClass;
     CartMapper cartMapper;
+    CartCacheService cartCacheService;
 
     @Transactional(readOnly = true)
     public CartResponse getCurrentUserCart() {
         User currentUser = currentUserClass.getCurrentUser();
-        return buildCartResponse(currentUser.getId());
+        String cacheKey = CacheKeys.cartByUser(currentUser.getId());
+
+        // Lấy giỏ hàng từ cache Redis nếu dữ liệu đã tồn tại.
+        CartResponse cachedCart = cartCacheService.get(cacheKey);
+        if (cachedCart != null) {
+            return cachedCart;
+        }
+
+        CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
+        cartCacheService.set(cacheKey, cartResponse, Duration.ofDays(7));
+
+        return cartResponse;
     }
 
     // Thêm sản phẩm vào giỏ hàng.
@@ -73,7 +85,10 @@ public class CartService {
         cartLineItem.setQuantity(newQuantity);
         cartLineItemRepository.save(cartLineItem);
 
-        return buildCartResponse(currentUser.getId());
+        CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
+        cartCacheService.registerCartCacheUpdateAfterCommit(currentUser.getId(), cartResponse);
+
+        return cartResponse;
     }
 
     // Xóa sản phẩm khỏi giỏ hàng của user hiện tại.
@@ -89,7 +104,10 @@ public class CartService {
 
         cartLineItemRepository.delete(cartLineItem);
 
-        return buildCartResponse(currentUser.getId());
+        CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
+        cartCacheService.registerCartCacheUpdateAfterCommit(currentUser.getId(), cartResponse);
+
+        return cartResponse;
     }
 
     // Tính tổng tiền cần thanh toán theo danh sách sản phẩm và số lượng.
@@ -147,7 +165,8 @@ public class CartService {
         return new CheckoutCartResponse(items, totalQuantity, totalAmount);
     }
 
-    private CartResponse buildCartResponse(Long userId) {
+    // Tạo dữ liệu giỏ hàng mới nhất từ DB theo userId.
+    private CartResponse buildCartResponseFromDb(Long userId) {
         List<CartLineItem> cartItems = cartLineItemRepository.findByUserId(userId);
 
         List<CartItemResponse> items = cartMapper.toResponseList(cartItems);
@@ -163,6 +182,7 @@ public class CartService {
 
         return new CartResponse(items, totalQuantity, totalAmount);
     }
+
 
     // Tạo một dòng sản phẩm checkout từ dữ liệu sản phẩm hiện tại trong DB.
     private CartItemResponse buildCheckoutItemResponse(Product product, Integer quantity) {

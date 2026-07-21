@@ -19,14 +19,17 @@ import shop.shop.category.dto.response.CategorySummaryResponse;
 import shop.shop.category.entity.Category;
 import shop.shop.category.mapper.CategoryMapper;
 import shop.shop.category.repository.CategoryRepository;
+import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.CloudinaryService;
+import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.product.service.ProductService;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,13 +43,26 @@ public class CategoryService {
     CategoryMapper categoryMapper;
     CloudinaryService cloudinaryService;
     ProductService productService;
+    CatalogCacheService catalogCacheService;
 
-    public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
-        return ApiResponse.success("lay danh list danh muc thanh cong", categoryRepository.findAll()
-                .stream()
-                .map(categoryMapper::toSummary)
-                .toList());
+    // Lấy toàn bộ danh mục dùng chung cho user/admin, ưu tiên đọc từ Redis trước khi query database.
+public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
+    String publicCacheKey = CacheKeys.categoriesAll();
+
+    List<CategorySummaryResponse> cachedCategories = catalogCacheService.get(publicCacheKey);
+
+    if (cachedCategories != null) {
+        return ApiResponse.success("lay danh list danh muc thanh cong", cachedCategories);
     }
+
+    List<CategorySummaryResponse> categories = categoryRepository.findAll()
+            .stream()
+            .map(categoryMapper::toSummary)
+            .toList();
+    catalogCacheService.set(publicCacheKey, categories, Duration.ofHours(5));
+
+    return ApiResponse.success("lay danh list danh muc thanh cong", categories);
+}
 
     @Transactional
     public ApiResponse<CategorySummaryResponse> createCategori(AdminCreateCategoriRequest data, MultipartFile file) {
@@ -73,6 +89,7 @@ public class CategoryService {
             category.setPublicIdUrl(uploadedImage.getPublicId());
 
             Category savedCategory = categoryRepository.save(category);
+            catalogCacheService.registerCategoryCacheDeleteAfterCommit();
             logger.info("admin id:{} thêm 1 danh mục mới id:{}",currentUserClass.getCurrentUser().getId(),savedCategory.getId());
 
             return ApiResponse.success("Tao danh muc thanh cong", categoryMapper.toSummary(savedCategory));
@@ -104,7 +121,8 @@ public class CategoryService {
             category.setPublicIdUrl(uploadedImage.getPublicId());
         }
         logger.info("admin id:{} chỉnh sửa danh mục Id:{} với data {} ",currentUserClass.getCurrentUser().getId(),id,data);
-
+        catalogCacheService.registerCategoryCacheDeleteAfterCommit();
+        System.out.println("laoding cache");
         return ApiResponse.success("da chinh sua danh muc thanh cong", categoryMapper.toSummary(category));
     }
 
@@ -120,6 +138,9 @@ public class CategoryService {
         // Xoa danh muc sau khi cac san pham thuoc danh muc da duoc xu ly.
         List<String> publicIds = collectCategoryImagePublicIds(category);
         categoryRepository.delete(category);
+
+        catalogCacheService.registerCategoryCacheDeleteAfterCommit();
+
         registerImageCleanupAfterCommit(publicIds.stream().distinct().toList());
         logger.info("admin {} xóa danh mục {} ",currentUserClass.getCurrentUser().getId(),id);
 

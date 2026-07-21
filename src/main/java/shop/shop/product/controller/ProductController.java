@@ -32,24 +32,21 @@ public class ProductController {
             @PageableDefault(size = 20, sort = "price", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(name = "categoryId", required = false) Long categoryId,
             @RequestParam(name = "search", required = false) String search) {
-        Page<ProductSummaryResponse> activeProducts = productService.getActiveProducts(categoryId, search, pageable);
-
-        PagedResponse<ProductSummaryResponse> pagedResponse = PagedResponse.from(activeProducts);
-        return ResponseEntity.status(200).body(ApiResponse.success("Active products fetched", pagedResponse));
+        return ResponseEntity.status(200).body(
+                ApiResponse.success("Active products fetched",
+                        productService.getActiveProductsPaged(categoryId, search, pageable)));
     }
 
     @GetMapping("/topSelling")
     public ResponseEntity<ApiResponse<List<ProductSummaryResponse>>> getActiveProductsTopSelling() {
-        return ResponseEntity.status(200)   
+        return ResponseEntity.status(200)
                 .body(ApiResponse.success("Lấy thành công sản phẩm top", productService.getTopSelling()));
 
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<ApiResponse<Productdetail>> getProductByid(@PathVariable(name = "id" ) Long id )
-    {
+    public ResponseEntity<ApiResponse<Productdetail>> getProductByid(@PathVariable(name = "id") Long id) {
         return ResponseEntity.status(200).body(
-            ApiResponse.success("Lấy thành công sản phẩm có id: " + id, productService.getProductById(id))
-        );
+                ApiResponse.success("Lấy thành công sản phẩm có id: " + id, productService.getProductById(id)));
     }
 }

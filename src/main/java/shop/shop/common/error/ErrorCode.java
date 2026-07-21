@@ -56,7 +56,8 @@ public enum ErrorCode {
     PAYMENT_NOT_SUPPORTED("Phương thức thanh toán không được hỗ trợ", HttpStatus.BAD_REQUEST),
     PAYMENT_EXPIRED("Thanh toán đã hết hạn", HttpStatus.BAD_REQUEST),
     INVALID_PERIOD_TYPE("Loại thời gian không hợp lệ", HttpStatus.BAD_REQUEST),
-    VALIDATION("sai định dạng body gửi đến api",HttpStatus.BAD_REQUEST);
+    VALIDATION("sai định dạng body gửi đến api",HttpStatus.BAD_REQUEST),
+    LIMIT_REQUEST("limit request", HttpStatus.TOO_MANY_REQUESTS);
 
     String message;
     HttpStatusCode statusCode;
