@@ -1,0 +1,86 @@
+version: "3.9"
+# // cấu hình các service
+services:
+# cấu hình tên service
+  mysql:
+  # // image dùng cho container
+    image: mysql:8.4
+    container_name: mysql-shopdemo
+    # cấu hình container tự khởi động lại
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PASSWORD_DATABASE} 
+    ports:
+      - "3306:3306"
+    networks:
+      - shop-network
+    volumes:
+      - /var/lib/mysql
+      # chạy file sql nếu /var/lib/mysql trống
+      - ./db.sql:/docker-entrypoint-initdb.d/init.sql
+
+
+  redis:
+    image: redis:7
+    container_name: redis-shopdemo
+    restart: unless-stopped
+    ports:
+    - "6379:6379"
+    networks:
+    - shop-network
+
+  rabbitMq:
+    image: rabbitmq:4.3.2-management
+    container_name: rabbitMq-shopdemo
+    restart: unless-stopped
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - shop-network
+
+  app:
+    build:
+    # thu mục làm build context
+      context: .
+      # tên file Dockerfile cần dùng để build image
+      dockerfile: Dockerfile
+    image: shopspring
+    container_name: shopspring
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - redis
+      - rabbitMq
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - shop-network
+  ngrok:
+    image: ngrok/ngrok:latest 
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment: 
+      NGROK_AUTHTOKEN: ${AUTH_TOKEN}
+    command: ["http", "app:8080"]
+    ports:
+      - "4040:4040"
+    depends_on:
+      - app
+    networks:
+      - shop-network
+
+  # Khai báo một Docker volume
+
+# volumes:
+#   mysql-data:
+# khai báo network 
+networks:
+  shop-network:
+    driver: bridge
+    
