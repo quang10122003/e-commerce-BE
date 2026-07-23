@@ -32,6 +32,7 @@ import shop.shop.product.service.ProductService;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import tools.jackson.core.type.TypeReference;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,7 @@ public class CategoryService {
 public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
     String publicCacheKey = CacheKeys.categoriesAll();
 
-    List<CategorySummaryResponse> cachedCategories = catalogCacheService.get(publicCacheKey);
+    List<CategorySummaryResponse> cachedCategories = catalogCacheService.getPayload(publicCacheKey, new TypeReference<List<CategorySummaryResponse>>() {});
 
     if (cachedCategories != null) {
         return ApiResponse.success("lay danh list danh muc thanh cong", cachedCategories);

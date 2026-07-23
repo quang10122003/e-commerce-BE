@@ -54,7 +54,7 @@ public class CartService {
         String cacheKey = CacheKeys.cartByUser(currentUser.getId());
 
         // Lấy giỏ hàng từ cache Redis nếu dữ liệu đã tồn tại.
-        CartResponse cachedCart = cartCacheService.get(cacheKey);
+        CartResponse cachedCart = cartCacheService.getPayload(cacheKey, CartResponse.class);
         if (cachedCart != null) {
             return cachedCart;
         }

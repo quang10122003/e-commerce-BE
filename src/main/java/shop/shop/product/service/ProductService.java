@@ -49,6 +49,7 @@ import shop.shop.product.entity.Product;
 import shop.shop.product.mapper.ProductMapper;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.productImage.entity.ProductImageEntity;
+import tools.jackson.core.type.TypeReference;
 
 @Service
 @RequiredArgsConstructor
@@ -76,7 +77,7 @@ public class ProductService {
                 pageable.getPageSize(),
                 pageable.getSort().toString());
 
-        PagedResponse<ProductSummaryResponse> cachedProducts = catalogCacheService.get(cacheKey);
+        PagedResponse<ProductSummaryResponse> cachedProducts = catalogCacheService.getPayload(cacheKey, new TypeReference<PagedResponse<ProductSummaryResponse>>() {});
         if (cachedProducts != null) {
             return cachedProducts;
         }
@@ -118,7 +119,7 @@ public class ProductService {
     public List<ProductSummaryResponse> getTopSelling() {
         String cacheKey = CacheKeys.productTopSelling();
         
-        List<ProductSummaryResponse> cachedProducts = catalogCacheService.get(cacheKey);
+        List<ProductSummaryResponse> cachedProducts = catalogCacheService.getPayload(cacheKey, new TypeReference<List<ProductSummaryResponse>>() {});
         if (cachedProducts != null) {
             return cachedProducts;
         }
@@ -135,7 +136,7 @@ public class ProductService {
 
     public Productdetail getProductById(Long id) {
         String cacheKey  = CacheKeys.productDetail(id);
-        Productdetail cachedProduct  = catalogCacheService.get(cacheKey);
+        Productdetail cachedProduct  = catalogCacheService.getPayload(cacheKey, Productdetail.class);
         if (cachedProduct != null) {
             return cachedProduct;
         }
@@ -189,9 +190,9 @@ public class ProductService {
             pageable.getPageSize(),
             pageable.getSort().toString());
 
-        ApiResponse<AdminProductListResponse> cachedResponse = catalogCacheService.get(cacheKey);
-        if (cachedResponse != null) {
-            return cachedResponse;
+        AdminProductListResponse cachedProducts = catalogCacheService.getPayload(cacheKey, AdminProductListResponse.class);
+        if (cachedProducts != null) {
+            return ApiResponse.success("Lấy danh sách sản phẩm thành công", cachedProducts);
         }
 
         Page<Product> productPage = productRepository.findAdminProducts(catagoryId, normalizedSearch, normalizedStatus,
@@ -202,14 +203,13 @@ public class ProductService {
                 .map(product -> adminProductMapper
                         .toSummary(productsWithImages.getOrDefault(product.getId(), product)));
 
-    ApiResponse<AdminProductListResponse> response = ApiResponse.success("Lấy danh sách sản phẩm thành công",
-        AdminProductListResponse.builder()
-            .products(PagedResponse.from(products))
-            .build());
+        AdminProductListResponse response = AdminProductListResponse.builder()
+                .products(PagedResponse.from(products))
+                .build();
 
-    catalogCacheService.set(cacheKey, response, Duration.ofHours(1));
+        catalogCacheService.set(cacheKey, response, Duration.ofHours(1));
 
-    return response;
+        return ApiResponse.success("Lấy danh sách sản phẩm thành công", response);
     }
 
     // Lấy thêm collection images cho các sản phẩm trong page hiện tại.
