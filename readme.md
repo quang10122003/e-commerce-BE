@@ -38,6 +38,26 @@ Các biến quan trọng cần khai báo trong `.env`:
 
 hãy tạo tài khoản ở các dịch vụ cần trong biến .env để có thể lấy đc các key để cấu hình .env
 
+### Cấu hình gửi mail Resend
+
+Trong file `src/main/java/shop/shop/integration/Resend/service/ResendService.java`, cập nhật email gửi đi ở trường `from` trong body request Resend:
+
+```java
+"from", "support@daoxuanquang.dev",
+```
+
+Thay giá trị này bằng email hoặc domain đã được verify trong tài khoản Resend của bạn. Đồng thời cấu hình `RESEND_KEY` trong `.env` bằng API key lấy từ Resend để chức năng gửi email reset mật khẩu hoạt động.
+
+### Cấu hình QR chuyển khoản
+
+Trong file `src/main/java/shop/shop/payment/service/PaymentService.java`, cập nhật các biến đầu file dùng để render QR chuyển khoản:
+
+- `BANK`: mã ngân hàng nhận tiền, ví dụ `MSB`, `VCB`, `TCB`.
+- `ACC_BANK`: số tài khoản ngân hàng nhận tiền.
+- `SEPAY_QR_URL_TEMPLATE`: template tạo QR Sepay, chỉ cần đổi nếu không dùng endpoint mặc định của Sepay.
+
+Sau khi đổi thông tin ngân hàng, QR thanh toán sẽ render theo tài khoản nhận tiền mới.
+
 ## 1. Chạy code trực tiếp
 
 ### Bước 1: Khởi động các dịch vụ phụ thuộc

@@ -1,6 +1,6 @@
-src/
-pom.xml
+target/
 .env
 .git/
 .idea/
 logger/
+*.log

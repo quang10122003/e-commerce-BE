@@ -31,8 +31,8 @@ public class ResendService {
                 + token;
 
         Map<String, Object> body = Map.of(
-                // dùng mail dev của resend
-                "from", "onboarding@resend.dev",
+                // Email gửi đi phải là email hoặc domain đã verify trong Resend.
+                "from", "support@daoxuanquang.dev",
                 "to", email,
                 "subject", "Reset password",
                 "html",

@@ -51,8 +51,13 @@ public class PaymentService {
     SimpMessagingTemplate messagingTemplate;
 
     // cấu tk nhận tiền ( hiện tại đang dùng sepay test)
+    // Template tạo URL QR Sepay, giữ nguyên nếu vẫn dùng dịch vụ qr.sepay.vn.
     static String SEPAY_QR_URL_TEMPLATE = "https://qr.sepay.vn/img?bank=%s&acc=%s&template=compact&amount=%s&des=%s";
+
+    // Mã ngân hàng nhận tiền, thay theo mã ngân hàng của tài khoản thật.
     static String BANK = "MSB";
+
+    // Số tài khoản nhận tiền, thay bằng tài khoản ngân hàng dùng để nhận chuyển khoản.
     static String ACC_BANK = "SBSEPAY4L58YTRESWZP";
 
     AdminPaymentMapper adminPaymentMapper;
