@@ -21,10 +21,12 @@ WORKDIR /app
 
 # Chọn profile 
 ENV SPRING_PROFILES_ACTIVE=docker
+# Cố định timezone runtime để LocalDateTime nhất quán giữa local và Railway.
+ENV TZ=Asia/Ho_Chi_Minh
 
 COPY --from=builder /app/target/*.jar app.jar
 
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Ho_Chi_Minh", "-jar", "app.jar"]

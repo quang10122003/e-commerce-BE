@@ -1,6 +1,8 @@
 package shop.shop.payment.service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,7 +82,8 @@ public class PaymentService {
 
         String qrUrl = buildQrcode(order);
 
-        LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(5);
+        // Trả thời gian có timezone rõ ràng để FE trên Vercel không hiểu sai giờ hết hạn.
+        Instant expiredAt = Instant.now().plus(Duration.ofMinutes(5));
 
         return QrRepone.builder()
                 .url(qrUrl)

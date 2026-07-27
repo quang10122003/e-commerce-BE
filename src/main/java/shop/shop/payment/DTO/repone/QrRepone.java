@@ -1,6 +1,6 @@
 package shop.shop.payment.DTO.repone;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,5 +16,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class QrRepone {
     String url;
-    LocalDateTime expiredAt;
+    // Thời điểm QR hết hạn theo UTC để FE tính countdown không lệch múi giờ.
+    Instant expiredAt;
 }
