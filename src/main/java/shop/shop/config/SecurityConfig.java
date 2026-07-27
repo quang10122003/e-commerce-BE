@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.nio.charset.StandardCharsets;
 
@@ -33,6 +34,7 @@ public class SecurityConfig {
         RestAuthenticationEntryPoint restAuthenticationEntryPoint;
         OAuth2LoginFailureHandler failureHandler;
         OAuth2LoginSuccessHandler successHandler;
+        CorsConfigurationSource corsConfigurationSource;
 
         static String[] PUBLIC_ENDPOINTS = {
                         "/api/auth/login",
@@ -52,10 +54,10 @@ public class SecurityConfig {
         };
 
         @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
                 http
-                                .cors(Customizer.withDefaults())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
