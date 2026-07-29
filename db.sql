@@ -114,7 +114,7 @@ CREATE TABLE orders (
   order_code VARCHAR(50) UNIQUE,
   user_id BIGINT NULL,
   status ENUM('PENDING','CONFIRMED','SHIPPING','COMPLETED','CANCELLED') NOT NULL,
-  cancelled_by ENUM('USER', 'ADMIN') NULL,
+  cancelled_by ENUM('USER', 'ADMIN', 'SYSTEM') NULL,
   shipping_name VARCHAR(255) NOT NULL,
   shipping_phone VARCHAR(50) NOT NULL,
   shipping_address TEXT NOT NULL,

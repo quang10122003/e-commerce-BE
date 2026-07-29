@@ -3,6 +3,7 @@ package shop.shop.order.dto.response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import shop.shop.common.CancelledBy;
 import shop.shop.common.OrderStatus;
 import shop.shop.common.PaymentMethod;
 
@@ -27,6 +28,8 @@ public class OrderResponse {
 
     // Phương thức thanh toán của đơn hàng.
     private PaymentMethod paymentMethod;
+    // ai là người hủy đơn hàng
+    private CancelledBy cancelledBy;
 
     // Thời điểm hết hạn thanh toán, không có thì trả về null.
     private LocalDateTime expiredAt;

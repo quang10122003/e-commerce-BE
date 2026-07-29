@@ -55,28 +55,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
         // Đếm tổng đơn trong 7 ngày gần nhất theo trạng thái.
         long countByStatusAndCreatedAtGreaterThanEqual(OrderStatus status, LocalDateTime fromDt);
-
-        // Lấy một số thông tin của 5 order mới nhất kèm MethodPayment mới nhất của
-        // payment thuộc order đó.
+        // lấy 5 order mơi nhất 
         @Query(value = """
-                        SELECT
-                            o.id AS id,
-                            o.created_at AS createdAt,
-                            o.shipping_name AS shippingName,
-                            o.total_amount AS totalAmount,
-                            p.method AS methodPayment,
-                            o.status AS statusOrder
-                        FROM orders o
-                        LEFT JOIN payments p
-                            ON p.order_id = o.id
-                            AND p.id = (
-                                SELECT MAX(p2.id)
-                                FROM payments p2
-                                WHERE p2.order_id = o.id
-                            )
-                        ORDER BY o.created_at DESC
-                        LIMIT 5
-                        """, nativeQuery = true)
+                SELECT
+                    o.id AS id,
+                    o.created_at AS createdAt,
+                    o.shipping_name AS shippingName,
+                    o.total_amount AS totalAmount,
+                    o.payment_method AS methodPayment,
+                    o.status AS statusOrder
+                FROM orders o
+                ORDER BY o.created_at DESC
+                LIMIT 5
+                """, nativeQuery = true)
         List<AdminNewOrderOverviewProjection> findTop5NewOrderOverview();
 
         // Lấy doanh thu từng ngày.

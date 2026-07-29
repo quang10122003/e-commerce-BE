@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import shop.shop.common.ProductStatus;
@@ -80,4 +81,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("select count(p) from Product p where p.status = shop.shop.common.ProductStatus.ACTIVE")
     long countProductsActive();
+
+    // Hoàn lại tồn kho cho các sản phẩm thuộc đơn hàng bị hủy.
+    @Modifying
+    @Query(value = """
+            UPDATE products p
+            JOIN order_items oi ON oi.product_id = p.id
+            SET p.stock = p.stock + oi.quantity
+            WHERE oi.order_id = :orderId
+            """, nativeQuery = true)
+    int restoreStockByOrderId(@Param("orderId") Long orderId);
 }

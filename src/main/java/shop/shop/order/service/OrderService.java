@@ -37,6 +37,7 @@ import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
 import shop.shop.integration.RabbitMQ.RabbitProducer;
+import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.order.dto.request.OrderRequest;
 import shop.shop.order.dto.response.CheckoutResponse;
 import shop.shop.order.dto.response.OrderResponse;
@@ -78,6 +79,7 @@ public class OrderService {
     PaymentRepo paymentRepo;
     OrderMapper orderMapper;
     RabbitProducer rabbitProducer;
+    CatalogCacheService catalogCacheService;
     static DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     static DateTimeFormatter DATE_FORMATTER_SHORT = DateTimeFormatter.ofPattern("dd/MM");
     static SecureRandom RANDOM = new SecureRandom();
@@ -94,6 +96,31 @@ public class OrderService {
 
         // MapStruct tự map field + tự gắn expiredAt qua @AfterMapping.
         return orderMapper.toResponseList(orders);
+    }
+
+    // Hủy đơn hàng của user hiện tại nếu đơn còn ở trạng thái cho phép.
+    @Transactional
+    public OrderResponse cancelCurrentUserOrder(Long orderId) {
+        User currentUser = getCurrentUser();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ApiError(ErrorCode.ORDER_NOT_FOUND));
+
+        validateCurrentUserOwnsOrder(order, currentUser);
+        validateUserCancelStatus(order);
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledBy(CancelledBy.USER);
+        handlePaymentWhenCancelOrder(order, CancelledBy.USER);
+        restoreStockWhenCancelOrder(order);
+
+        // lấy product ID của cac sản phẩm bị hủy để xóa cache
+        List<Long> productIds = order.getItems().stream()
+                .map(OrderItem::getProductId)
+                .toList();
+        catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
+
+        logger.info("user:{} hủy đơn hàng:{} với order code:{}", currentUser.getId(), orderId, order.getOrderCode());
+        return orderMapper.toResponse(orderRepository.save(order));
     }
 
     // Lấy danh sách đơn hàng cho admin theo bộ lọc.
@@ -141,10 +168,18 @@ public class OrderService {
         order.setStatus(targetStatus);
 
         if (targetStatus == OrderStatus.CANCELLED) {
+            // lấy product id để hủy cache cho các sản phầm liên quan
+            List<Long> productIds = order.getItems().stream()
+                    .map(OrderItem::getProductId)
+                    .toList();
+            catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
             order.setCancelledBy(CancelledBy.ADMIN);
-            handlePaymentWhenAdminCancelOrder(order);
+            handlePaymentWhenCancelOrder(order, CancelledBy.ADMIN);
+            restoreStockWhenCancelOrder(order);
+            catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
         }
-        logger.info("admin:{} chuyển trạng thái đơn hàng:{} với order code:{} về {}",currentUserClass.getCurrentUser().getId(),orderId,order.getOrderCode(),status);
+        logger.info("admin:{} chuyển trạng thái đơn hàng:{} với order code:{} về {}",
+                currentUserClass.getCurrentUser().getId(), orderId, order.getOrderCode(), status);
         return ApiResponse.success("cập nhật trạng thái đơn hàng thành công",
                 orderMapper.toAdminOrderItem(orderRepository.save(order)));
     }
@@ -190,6 +225,20 @@ public class OrderService {
         return targetStatus == OrderStatus.CONFIRMED || targetStatus == OrderStatus.CANCELLED;
     }
 
+    // Kiểm tra đơn hàng có thuộc về user đang đăng nhập hay không.
+    private void validateCurrentUserOwnsOrder(Order order, User currentUser) {
+        if (order.getUser() == null || !order.getUser().getId().equals(currentUser.getId())) {
+            throw new ApiError(ErrorCode.ORDER_NOT_FOUND);
+        }
+    }
+
+    // User chỉ được hủy đơn khi đơn vẫn đang chờ xử lý.
+    private void validateUserCancelStatus(Order order) {
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new ApiError(ErrorCode.ILLEGAL_STATE, "Chỉ có thể hủy đơn hàng đang chờ xử lý");
+        }
+    }
+
     // Kiểm tra đơn SEPAY đã thanh toán trước khi cho hoàn tất.
     private void validatePaymentBeforeCompleteOrder(Order order, OrderStatus targetStatus) {
         if (targetStatus != OrderStatus.COMPLETED || order.getPaymentMethod() != PaymentMethod.SEPAY) {
@@ -204,8 +253,13 @@ public class OrderService {
         }
     }
 
-    // Xử lý payment SEPAY khi admin hủy đơn hàng.
-    private void handlePaymentWhenAdminCancelOrder(Order order) {
+    // Hoàn tồn kho cho đơn hàng vừa chuyển sang hủy.
+    private void restoreStockWhenCancelOrder(Order order) {
+        productRepository.restoreStockByOrderId(order.getId());
+    }
+
+    // Xử lý payment SEPAY khi đơn hàng bị hủy.
+    private void handlePaymentWhenCancelOrder(Order order, CancelledBy cancelledBy) {
         if (order.getPaymentMethod() != PaymentMethod.SEPAY) {
             return;
         }
@@ -217,13 +271,15 @@ public class OrderService {
         }
         if (payment.getStatus() == PaymentStatus.PENDING) {
             payment.setStatus(PaymentStatus.FAILED);
-            logger.info("admin {} hủy order {} sepay payement chưa thành toán nên chuyển payment:{} về FAILED",currentUserClass.getCurrentUser().getId(),order.getId(),payment.getId());
+            logger.info("{} hủy order {} sepay payment chưa thanh toán nên chuyển payment:{} về FAILED",
+                    cancelledBy, order.getId(), payment.getId());
             return;
         }
 
-        // Đơn đã thanh toán (PAID/PAID_LATE) nhưng bị admin hủy
+        // Ghi log để kiểm tra hoàn tiền thủ công khi đơn đã thanh toán.
         if (payment.getStatus() == PaymentStatus.PAID || payment.getStatus() == PaymentStatus.PAID_LATE) {
-            logger.warn("admin {} hủy order {} sepay payement id:{} đã thanh toán check hoàn tiền thủ công");
+            logger.warn("{} hủy order {} sepay payment id:{} đã thanh toán, cần kiểm tra hoàn tiền thủ công",
+                    cancelledBy, order.getId(), payment.getId());
         }
     }
 
@@ -358,15 +414,18 @@ public class OrderService {
 
         order = saveOrderWithStock(order);
 
+        // xóa cache của các sản phẩm khi tạo order
+        List<Long> productIds = extractProductIds(request);
+        catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
+
         String orderCode = generateOrderCode(order.getId());
         order.setOrderCode(orderCode);
         Order orderdone = orderRepository.save(order);
 
-        cartLineItemRepository.deleteByUserIdAndProductIds(
-                currentUser.getId(),
-                extractProductIds(request));
+        cartLineItemRepository.deleteByUserIdAndProductIds(currentUser.getId(), productIds);
 
-        logger.info("user:{} tạo order:{} method:{} ordercode:{}",currentUser.getId(), orderdone.getId(),request.getPaymentMethod(),orderCode);
+        logger.info("user:{} tạo order:{} method:{} ordercode:{}", currentUser.getId(), orderdone.getId(),
+                request.getPaymentMethod(), orderCode);
         return CheckoutResponse.builder()
                 .orderCode(orderCode)
                 .paymentMethod(PaymentMethod.COD.name())
@@ -382,6 +441,9 @@ public class OrderService {
         order.setPaymentMethod(PaymentMethod.SEPAY);
 
         order = saveOrderWithStock(order);
+
+        List<Long> productIds = extractProductIds(request);
+        catalogCacheService.registerProductCacheDeleteAfterCommit(productIds); // 👈 thêm
 
         String orderCode = generateOrderCode(order.getId());
         order.setOrderCode(orderCode);
@@ -399,16 +461,17 @@ public class OrderService {
 
         PaymentEntity paymeneDone = paymentRepo.save(payment);
 
-        cartLineItemRepository.deleteByUserIdAndProductIds(
-                currentUser.getId(),
-                extractProductIds(request));
-        // chuyển mess order id vào rabbitMQ để xử lý khi đơn hàng hết expiredAt
+        cartLineItemRepository.deleteByUserIdAndProductIds(currentUser.getId(), productIds);
+
         try {
             rabbitProducer.sendOrderSepayCheckQueue(orderDone.getId().toString());
         } catch (AmqpException e) {
-            logger.warn("rabbitMQ ko hoạt đồng order:{} ordercode:{} payment:{} payment của đơn hàng này sẽ ko tự động chuyển trạng thái khi hết time",orderDone.getId(),orderCode,paymeneDone.getId());
+            logger.warn(
+                    "rabbitMQ ko hoạt đồng order:{} ordercode:{} payment:{} payment của đơn hàng này sẽ ko tự động chuyển trạng thái khi hết time",
+                    orderDone.getId(), orderCode, paymeneDone.getId());
         }
-        logger.info("order:{} dc tạo với paymene:{} ordercode:{} tạo bởi user:{}",orderDone.getId(),paymeneDone.getId(),orderCode,currentUser.getId());
+        logger.info("order:{} dc tạo với paymene:{} ordercode:{} tạo bởi user:{}", orderDone.getId(),
+                paymeneDone.getId(), orderCode, currentUser.getId());
         return CheckoutResponse.builder()
                 .orderCode(orderCode)
                 .paymentMethod(PaymentMethod.SEPAY.name())
@@ -494,6 +557,8 @@ public class OrderService {
 
             if (product.getStock() < itemReq.getQuantity())
                 throw new ApiError(ErrorCode.INSUFFICIENT_STOCK);
+            // cộng lượt mua
+            product.setPurchases(product.getPurchases() + itemReq.getQuantity());
 
             OrderItem item = OrderItem.builder()
                     .order(order)

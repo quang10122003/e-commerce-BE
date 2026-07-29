@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,15 @@ public class OrderController {
         return ResponseEntity.ok(
                 ApiResponse.success("Lay danh sach don hang thanh cong",
                         orderService.getCurrentUserOrders()));
+    }
+
+    // Hủy đơn hàng của user đang đăng nhập khi đơn còn đủ điều kiện hủy.
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelCurrentUserOrder(
+            @PathVariable(name = "orderId") Long orderId) {
+        return ResponseEntity.ok(
+                ApiResponse.success("Huy don hang thanh cong",
+                        orderService.cancelCurrentUserOrder(orderId)));
     }
 
     @PostMapping

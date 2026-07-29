@@ -53,6 +53,10 @@ public class SecurityConfig {
                         "/api/auth/login/oauth2"
         };
 
+        static String[] AUTHENTICATED_ENDPOINTS = {
+                        "/api/orders/**"
+        };
+
         @Bean
         SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -74,6 +78,8 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                                                // Các API đơn hàng của user phải có JWT hợp lệ.
+                                                .requestMatchers(AUTHENTICATED_ENDPOINTS).authenticated()
                                                 // Co the mo them GET public cho products/categories neu can.
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

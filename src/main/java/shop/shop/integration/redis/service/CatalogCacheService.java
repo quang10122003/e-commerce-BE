@@ -1,6 +1,7 @@
 package shop.shop.integration.redis.service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -141,6 +142,32 @@ public class CatalogCacheService {
         });
     }
 
+    // Xóa cache product detail và các danh sách product liên quan (nhiều sản phẩm detail)
+   
+    public void registerProductCacheDeleteAfterCommit(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return;
+        }
+
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            for (Long productId : productIds) {
+                CatalogCacheService.this.Del(CacheKeys.productDetail(productId));
+            }
+            CatalogCacheService.this.DelByPattern("catalog:product:list:*");
+            CatalogCacheService.this.DelByPattern("admin:product:list:*");
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            public void afterCommit() {
+                for (Long productId : productIds) {
+                    CatalogCacheService.this.Del(CacheKeys.productDetail(productId));
+                }
+                CatalogCacheService.this.DelByPattern("catalog:product:list:*");
+                CatalogCacheService.this.DelByPattern("admin:product:list:*");
+            }
+        });
+    }
     // Xóa cache danh mục và các danh sách product liên quan sau khi transaction category commit.
     public void registerCategoryCacheDeleteAfterCommit() {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {

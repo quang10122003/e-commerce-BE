@@ -25,6 +25,7 @@ import shop.shop.admin.dto.response.AdminPayementItemRepone;
 import shop.shop.admin.dto.response.AdminPaymentsRepone;
 import shop.shop.admin.dto.response.AdminProductSummaryResponse;
 import shop.shop.admin.mapper.AdminPaymentMapper;
+import shop.shop.common.CancelledBy;
 import shop.shop.common.OrderStatus;
 import shop.shop.common.PaymentMethod;
 import shop.shop.common.PaymentStatus;
@@ -38,6 +39,7 @@ import shop.shop.payment.DTO.request.QrRquest;
 import shop.shop.payment.DTO.request.SePayWebhookRequest;
 import shop.shop.payment.entity.PaymentEntity;
 import shop.shop.payment.repo.PaymentRepo;
+import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
 
@@ -51,6 +53,7 @@ public class PaymentService {
     PaymentRepo paymentRepo;
     UserRepo userRepo;
     SimpMessagingTemplate messagingTemplate;
+    ProductRepository productRepository;
 
     // cấu tk nhận tiền ( hiện tại đang dùng sepay test)
     // Template tạo URL QR Sepay, giữ nguyên nếu vẫn dùng dịch vụ qr.sepay.vn.
@@ -182,7 +185,9 @@ public class PaymentService {
                 && !transactionDate.isBefore(payment.getExpiredAt());
 
         try {
-            if (isLate) {
+            if (isPaymentNoLongerAvailable(payment)) {
+                handleUnavailablePayment(payment, referenceCode, transactionDate, transactionRef);
+            } else if (isLate) {
                 handleLatePayment(payment, referenceCode, transactionDate, transactionRef);
             } else {
                 handleOnTimePayment(payment, referenceCode, transactionDate, transactionRef, amount);
@@ -206,6 +211,25 @@ public class PaymentService {
                 || payment.getStatus() == PaymentStatus.PAID_LATE;
     }
 
+    // Kiểm tra đơn/payment còn đủ điều kiện xác nhận thanh toán hay không.
+    private boolean isPaymentNoLongerAvailable(PaymentEntity payment) {
+        return payment.getOrder().getStatus() != OrderStatus.PENDING
+                || payment.getStatus() != PaymentStatus.PENDING;
+    }
+
+    // Ghi nhận tiền đến sau khi đơn không còn khả dụng để xử lý hoàn tiền thủ công.
+    private void handleUnavailablePayment(PaymentEntity payment, String referenceCode,
+            LocalDateTime transactionDate, String transactionRef) {
+        log.warn("Thanh toán đến khi đơn không còn khả dụng: {}", transactionRef);
+
+        payment.setPaidAt(transactionDate);
+        payment.setReferenceCode(referenceCode);
+        payment.setStatus(PaymentStatus.PAID_LATE);
+        paymentRepo.save(payment);
+
+        notify(transactionRef, "PAID_LATE", "Thanh toán đến khi đơn không còn khả dụng, cần kiểm tra hoàn tiền");
+    }
+
     private void handleLatePayment(PaymentEntity payment, String referenceCode,
             LocalDateTime transactionDate, String transactionRef) {
         log.warn("Đơn hàng đã hết hạn, khách chuyển khoản muộn: {}", transactionRef);
@@ -215,7 +239,15 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.PAID_LATE);
         paymentRepo.save(payment);
 
-        notify(transactionRef, "PAID_LATE", "Thanh toán muộn, đơn hàng sẽ bị hủy");
+        // Hủy đơn quá hạn và hoàn tồn kho ngay khi nhận thanh toán muộn.
+        if (payment.getOrder().getStatus() == OrderStatus.PENDING) {
+            payment.getOrder().setStatus(OrderStatus.CANCELLED);
+            payment.getOrder().setCancelledBy(CancelledBy.SYSTEM);
+            productRepository.restoreStockByOrderId(payment.getOrder().getId());
+            orderRepository.save(payment.getOrder());
+        }
+
+        notify(transactionRef, "PAID_LATE", "Thanh toán muộn, đơn hàng đã bị hủy");
     }
 
     private void handleOnTimePayment(PaymentEntity payment, String referenceCode, LocalDateTime transactionDate,
