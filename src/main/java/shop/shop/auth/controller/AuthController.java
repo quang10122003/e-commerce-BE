@@ -3,6 +3,7 @@ package shop.shop.auth.controller;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,7 +19,9 @@ import shop.shop.auth.dto.response.CurrentUserResponse;
 import shop.shop.auth.dto.response.WsTicketResponse;
 import shop.shop.auth.dto.request.ForgotPasswordRequest;
 import shop.shop.auth.dto.request.LoginRequest;
+import shop.shop.auth.dto.request.ChangePasswordRequest;
 import shop.shop.auth.dto.request.ResetPasswordRequest;
+import shop.shop.auth.dto.request.UpdateProfileRequest;
 import shop.shop.auth.dto.response.RefreshTokenResponse;
 import shop.shop.auth.dto.request.SingUpResquest;
 import shop.shop.auth.service.AuthService;
@@ -57,6 +60,16 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<CurrentUserResponse>> me() {
         return ResponseEntity.ok(authService.me());
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<CurrentUserResponse>> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateCurrentUser(request));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(authService.changeCurrentUserPassword(request));
     }
 
     @PostMapping("/ws-ticket")

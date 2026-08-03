@@ -29,11 +29,13 @@ import shop.shop.auth.dto.response.AuthResponse;
 import shop.shop.auth.dto.response.AccessTokenValidationResponse;
 import shop.shop.auth.dto.response.CurrentUserResponse;
 import shop.shop.auth.dto.response.WsTicketResponse;
+import shop.shop.auth.dto.request.ChangePasswordRequest;
 import shop.shop.auth.entity.PasswordResetToken;
 import shop.shop.auth.repo.PasswordResetTokenRepo;
 import shop.shop.auth.dto.request.ForgotPasswordRequest;
 import shop.shop.auth.dto.request.LoginRequest;
 import shop.shop.auth.dto.request.ResetPasswordRequest;
+import shop.shop.auth.dto.request.UpdateProfileRequest;
 import shop.shop.auth.dto.response.RefreshTokenResponse;
 import shop.shop.auth.dto.request.SingUpResquest;
 import shop.shop.common.error.ApiError;
@@ -238,6 +240,7 @@ public class AuthService {
         // lấy user và reset password
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
+        userRepo.save(user);
         // đánh dấu token đã sử dụng
         resetToken.setUsed(true);
         logger.info("user voi id {} vừa lấy lại mk và đổi mk thành công ", user.getId());
@@ -314,27 +317,51 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public ApiResponse<CurrentUserResponse> me() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            throw new ApiError(ErrorCode.UNAUTHORIZED);
-        }
-
-        User user = userRepo.findByEmailIgnoreCase(authentication.getName())
-                .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
-        // Kiem tra bo sung o service de user bi khoa khong doc duoc thong tin chinh
-        // minh.
-        assertUserNotLocked(user);
-
-        CurrentUserResponse response = CurrentUserResponse.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRoleName())
-                .build();
+        User user = getCurrentAuthenticatedUser();
+        CurrentUserResponse response = buildCurrentUserResponse(user);
 
         return ApiResponse.success("Current user fetched", response);
+    }
+
+    @Transactional
+    public ApiResponse<CurrentUserResponse> updateCurrentUser(UpdateProfileRequest request) {
+        if (request == null) {
+            throw new ApiError(ErrorCode.BAD_REQUEST);
+        }
+
+        User user = getCurrentAuthenticatedUser();
+        user.setFullName(normalizeFullName(request.getFullName()));
+        userRepo.save(user);
+
+        return ApiResponse.success("Cap nhat thong tin tai khoan thanh cong", buildCurrentUserResponse(user));
+    }
+
+    @Transactional
+    public ApiResponse<Void> changeCurrentUserPassword(ChangePasswordRequest request) {
+        if (request == null) {
+            throw new ApiError(ErrorCode.BAD_REQUEST);
+        }
+
+        User user = getCurrentAuthenticatedUser();
+        String currentPassword = request.getCurrentPassword();
+        String newPassword = request.getNewPassword();
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new ApiError(ErrorCode.BAD_REQUEST, "Tai khoan nay chua co mat khau, vui long dat mat khau moi tu giao dien dang nhap neu can.");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new ApiError(ErrorCode.BAD_REQUEST, "Mat khau hien tai khong dung");
+        }
+
+        if (currentPassword != null && currentPassword.equals(newPassword)) {
+            throw new ApiError(ErrorCode.BAD_REQUEST, "Mat khau moi phai khac mat khau hien tai");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepo.save(user);
+
+        return ApiResponse.success("Doi mat khau thanh cong", null);
     }
 
     @Transactional(readOnly = true)
@@ -404,6 +431,30 @@ public class AuthService {
 
     private String normalizeFullName(String fullName) {
         return fullName == null ? null : fullName.trim();
+    }
+
+    private User getCurrentAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new ApiError(ErrorCode.UNAUTHORIZED);
+        }
+
+        User user = userRepo.findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
+
+        assertUserNotLocked(user);
+        return user;
+    }
+
+    private CurrentUserResponse buildCurrentUserResponse(User user) {
+        return CurrentUserResponse.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRoleName())
+                .build();
     }
 
     private String extractBearerToken(String authorizationHeader) {
