@@ -2,7 +2,6 @@ package shop.shop.integration.cloudinary.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +40,7 @@ public class CloudinaryService {
                 .map(file -> {
                     try {
 
-                        Map uploadResult = cloudinary.uploader().upload(
+                        Map<?, ?> uploadResult = cloudinary.uploader().upload(
                                 file.getBytes(),
                                 ObjectUtils.asMap(
                                         "folder", folder,
@@ -98,7 +97,7 @@ public class CloudinaryService {
         publicIds.parallelStream().filter((publicId) -> publicId != null && !publicId.isBlank())
                 .forEach((publicId) -> {
                     try {
-                        Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap(
+                        Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap(
                                 "resource_type", "image",
                                 "invalidate", true));
                         String status = result.get("result").toString();

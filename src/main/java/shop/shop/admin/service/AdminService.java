@@ -44,7 +44,8 @@ import shop.shop.common.PeriodType;
 import shop.shop.common.ProductStatus;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.order.repo.OrderRepository;
-import shop.shop.order.service.OrderService;
+import shop.shop.order.service.OrderLifecycleService;
+import shop.shop.order.service.RevenueReportQueryService;
 import shop.shop.payment.service.PaymentService;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.product.service.ProductService;
@@ -61,7 +62,10 @@ public class AdminService {
         ProductRepository productRepository;
         ProductService productService;
         OrderRepository orderRepository;
-        OrderService orderService;
+        // Trước: OrderService orderService (God Service).
+        // Sau: tách theo đúng trách nhiệm — vòng đời đơn vs báo cáo doanh thu.
+        OrderLifecycleService orderLifecycleService;
+        RevenueReportQueryService revenueReportQueryService;
         CategoryService categoryService;
         PaymentService paymentService;
 
@@ -138,16 +142,16 @@ public class AdminService {
                                 orderRepository.countByStatus(OrderStatus.PENDING), newOrders);
 
                 // Doanh thu tuần trước.
-                BigDecimal LastWeekRevenue = orderService.getLastWeekRevenue();
+                BigDecimal LastWeekRevenue = revenueReportQueryService.getLastWeekRevenue();
 
                 // Doanh thu tuần hiện tại.
-                BigDecimal weekRevenue = orderService.getWeekRevenue();
+                BigDecimal weekRevenue = revenueReportQueryService.getWeekRevenue();
 
                 // Mức tăng trưởng doanh thu của tuần hiện tại so với tuần vừa qua.
-                BigDecimal growth = orderService.calculateGrowth(weekRevenue, LastWeekRevenue);
+                BigDecimal growth = revenueReportQueryService.calculateGrowth(weekRevenue, LastWeekRevenue);
 
                 // Doanh thu trong 7 ngày.
-                List<AdminRevenueIn7day> listAdminRevenueIn7day = orderService.getRevenueIn7Days();
+                List<AdminRevenueIn7day> listAdminRevenueIn7day = revenueReportQueryService.getRevenueIn7Days();
 
                 AdminRevenueOverview adminRevenueOverview = new AdminRevenueOverview(weekRevenue, growth,
                                 listAdminRevenueIn7day);
@@ -187,13 +191,14 @@ public class AdminService {
 
         public ApiResponse<AdminOrdersRepone> getOrders(String search, String status, LocalDate from,
                         LocalDate to) {
-                return orderService.getAdminOrders(search, status, from, to);
+                return orderLifecycleService.getAdminOrders(search, status, from, to);
         }
 
         public ApiResponse<AdminOrderItemRepone> updateOrderStatus(Long orderId, String status) {
-                return orderService.updateAdminOrderStatus(orderId, status);
+                return orderLifecycleService.updateAdminOrderStatus(orderId, status);
         }
-        public AdminRevenueRepone getRevenueData(PeriodType type, Integer year, Integer week, Integer month){
-                return orderService.getRevenueData( type,  year,  week,  month);
+
+        public AdminRevenueRepone getRevenueData(PeriodType type, Integer year, Integer week, Integer month) {
+                return revenueReportQueryService.getRevenueData(type, year, week, month);
         }
 }

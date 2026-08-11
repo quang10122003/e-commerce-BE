@@ -40,28 +40,28 @@ public class RabbitMqConfig {
      String orderSepayDelayRoutingKey;
 
     @Bean
-    public Queue orderSepayCheckQueue() {
+     Queue orderSepayCheckQueue() {
         return QueueBuilder.durable(orderSepayCheckQueue).build();
         // return new Queue(orderSepayCheckQueue, true);
     }
 
     // cấu hình Queue delay để giữ sau 1 ngày thì chuyển sang Exchange dựa vào routingkey chuyển vào queue để xử lý
     @Bean
-    public Queue orderSepayDelayQueue() {
+     Queue orderSepayDelayQueue() {
         return QueueBuilder.durable(orderSepayDelayQueue).ttl(
                 timeDelayQueueSepay)
                 .deadLetterExchange(exchangeName).deadLetterRoutingKey(orderSepayCheckRoutingKey).build();
     }
 
     @Bean
-    public TopicExchange exchange() {
+     TopicExchange exchange() {
         return new TopicExchange(exchangeName);
     }
 
     // cấu hình buiding để định tuyến exchange điều hướng đúng vào queue khi có tin
     // nhắn đến bằng routingkey
     @Bean
-    public Binding orderSepayBinding() {
+     Binding orderSepayBinding() {
         return BindingBuilder
                 .bind(orderSepayCheckQueue())
                 .to(exchange())
@@ -69,18 +69,18 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Binding orderSepayBindingDelay(){
+     Binding orderSepayBindingDelay(){
         return BindingBuilder.bind(orderSepayDelayQueue()).to(exchange()).with(orderSepayDelayRoutingKey);
     }
 
     // cấu hình cho gửi đc json vào qeue
     @Bean
-    public MessageConverter messageConverter() {
+     MessageConverter messageConverter() {
         return new JacksonJsonMessageConverter();
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+     RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
             MessageConverter messageConverter) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter);

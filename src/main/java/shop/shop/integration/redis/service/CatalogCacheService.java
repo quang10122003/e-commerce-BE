@@ -143,7 +143,6 @@ public class CatalogCacheService {
     }
 
     // Xóa cache product detail và các danh sách product liên quan (nhiều sản phẩm detail)
-   
     public void registerProductCacheDeleteAfterCommit(List<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return;

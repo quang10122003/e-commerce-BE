@@ -37,6 +37,8 @@ spring:
 
 app:
   frontend-url: ${DOMAIN:http://localhost:3000}
+  # email dùng để gửi resend
+  form-email: support@daoxuanquang.dev
 
   jwt:
     secret: ${JWT_SECRET}
@@ -59,4 +61,5 @@ app:
     orderSepayCheckRoutingKey: orderSepayKey
     orderSepayDelayQueue: order.sepay.delay.queue
     orderSepayDelayRoutingKey: order.sepay.delay.routingkey
-    order-sepay-delay-ttl-ms: 43200000
+    order-sepay-delay-ttl-ms: 120000 
+    #  43200000
