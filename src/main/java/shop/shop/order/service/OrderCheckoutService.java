@@ -15,6 +15,9 @@ import shop.shop.common.PaymentMethod;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
+import shop.shop.integration.RabbitMQ.QueueService;
+import shop.shop.integration.RabbitMQ.DTO.CreateOrderMailProducer;
+import shop.shop.integration.RabbitMQ.DTO.OrderItemMailProducer;
 import shop.shop.integration.Resend.DTO.resquest.CreateOrderMailDTO;
 import shop.shop.integration.Resend.service.EmailService;
 import shop.shop.integration.redis.service.CatalogCacheService;
@@ -22,6 +25,7 @@ import shop.shop.order.dto.request.OrderRequest;
 import shop.shop.order.dto.response.CheckoutResponse;
 import shop.shop.order.entity.Order;
 import shop.shop.order.entity.OrderItem;
+import shop.shop.order.mapper.OrderItemMapper;
 import shop.shop.order.repo.OrderRepository;
 import shop.shop.order.service.interfaces.IOrderPaymentHandler;
 import shop.shop.product.entity.Product;
@@ -48,7 +52,8 @@ public class OrderCheckoutService {
     CartLineItemRepository cartLineItemRepository;
     CatalogCacheService catalogCacheService;
     List<IOrderPaymentHandler> paymentHandlers; 
-    EmailService emailService;
+    QueueService queueService;
+    OrderItemMapper orderItemMapper;
     static SecureRandom RANDOM = new SecureRandom();
 
     // hàm tạo order duy nhất cho mọi phương thức thanh toán 
@@ -78,8 +83,20 @@ public class OrderCheckoutService {
 
         logger.info("user:{} tạo order:{} method:{} ordercode:{}", currentUser.getId(), orderDone.getId(),
                 method, orderCode);
-        CreateOrderMailDTO orderMailDto = new CreateOrderMailDTO(orderDone.getUser().getEmail(),orderDone.getShippingName(),orderCode,orderDone.getShippingPhone(),orderDone.getPaymentMethod(),orderDone.getShippingAddress(),orderDone.getTotalAmount(),orderDone.getItems());
-        emailService.sendOrderMail(orderMailDto);
+         // map List<OrderItem> entity -> List<OrderItemMailProducer> DTO, tránh vòng lặp khi serialize
+    List<OrderItemMailProducer> itemDtos = orderItemMapper.toOrderItemMailProducers(orderDone.getItems());
+
+    CreateOrderMailProducer orderMailDto = new CreateOrderMailProducer(
+            orderDone.getUser().getEmail(),
+            orderDone.getShippingName(),
+            orderCode,
+            orderDone.getShippingPhone(),
+            orderDone.getPaymentMethod(),
+            orderDone.getShippingAddress(),
+            orderDone.getTotalAmount(),
+            itemDtos);
+
+        queueService.sendCreateOrderMailEvent(orderMailDto);
 
         return CheckoutResponse.builder()
                 .orderCode(orderCode)

@@ -22,65 +22,84 @@ import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 public class RabbitMqConfig {
 
     @Value("${app.rabbitMq.exchange}")
-     String exchangeName;
+    String exchangeName;
 
     @Value("${app.rabbitMq.orderSepayCheckQueue}")
-     String orderSepayCheckQueue;
+    String orderSepayCheckQueue;
 
     @Value("${app.rabbitMq.orderSepayCheckRoutingKey}")
-     String orderSepayCheckRoutingKey;
-     
+    String orderSepayCheckRoutingKey;
+
     @Value("${app.rabbitMq.order-sepay-delay-ttl-ms}")
     int timeDelayQueueSepay;
 
     @Value("${app.rabbitMq.orderSepayDelayQueue}")
-     String orderSepayDelayQueue;
+    String orderSepayDelayQueue;
 
-     @Value("${app.rabbitMq.orderSepayDelayRoutingKey}")
-     String orderSepayDelayRoutingKey;
+    @Value("${app.rabbitMq.orderSepayDelayRoutingKey}")
+    String orderSepayDelayRoutingKey;
+
+    @Value("${app.rabbitMq.mailQueue}")
+    String mailQueue;
 
     @Bean
-     Queue orderSepayCheckQueue() {
+    Queue orderSepayCheckQueue() {
         return QueueBuilder.durable(orderSepayCheckQueue).build();
         // return new Queue(orderSepayCheckQueue, true);
     }
 
-    // cấu hình Queue delay để giữ sau 1 ngày thì chuyển sang Exchange dựa vào routingkey chuyển vào queue để xử lý
+    // cấu hình queue để nhận event gửi mail bất đồng bộ
     @Bean
-     Queue orderSepayDelayQueue() {
+    Queue mailQueue() {
+        return QueueBuilder.durable(mailQueue).build();
+    }
+
+    // cấu hình Queue delay để giữ sau 1 ngày thì chuyển sang Exchange dựa vào
+    // routingkey chuyển vào queue để xử lý
+    @Bean
+    Queue orderSepayDelayQueue() {
         return QueueBuilder.durable(orderSepayDelayQueue).ttl(
                 timeDelayQueueSepay)
                 .deadLetterExchange(exchangeName).deadLetterRoutingKey(orderSepayCheckRoutingKey).build();
     }
 
     @Bean
-     TopicExchange exchange() {
+    TopicExchange exchange() {
         return new TopicExchange(exchangeName);
     }
 
     // cấu hình buiding để định tuyến exchange điều hướng đúng vào queue khi có tin
     // nhắn đến bằng routingkey
     @Bean
-     Binding orderSepayBinding() {
+    Binding orderSepayBinding() {
         return BindingBuilder
                 .bind(orderSepayCheckQueue())
                 .to(exchange())
                 .with(orderSepayCheckRoutingKey);
     }
+    
+    @Bean
+    Binding mailBinding() {
+        return BindingBuilder
+                .bind(mailQueue())
+                .to(exchange())
+                .with("email.#");
+    }
+    
 
     @Bean
-     Binding orderSepayBindingDelay(){
+    Binding orderSepayBindingDelay() {
         return BindingBuilder.bind(orderSepayDelayQueue()).to(exchange()).with(orderSepayDelayRoutingKey);
     }
 
     // cấu hình cho gửi đc json vào qeue
     @Bean
-     MessageConverter messageConverter() {
+    MessageConverter messageConverter() {
         return new JacksonJsonMessageConverter();
     }
 
     @Bean
-     RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
             MessageConverter messageConverter) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter);

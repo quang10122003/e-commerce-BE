@@ -16,7 +16,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import shop.shop.common.PaymentMethod;
 import shop.shop.common.PaymentStatus;
-import shop.shop.integration.RabbitMQ.WebSocketService;
+import shop.shop.integration.RabbitMQ.QueueService;
 import shop.shop.order.entity.Order;
 import shop.shop.order.service.interfaces.IOrderPaymentHandler;
 import shop.shop.payment.entity.PaymentEntity;
@@ -29,7 +29,7 @@ public class SepayPaymentHandler implements IOrderPaymentHandler {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
     PaymentRepo paymentRepo;
-    WebSocketService webSocketService;
+    QueueService webSocketService;
 
     @NonFinal
     @Value("${app.rabbitMq.order-sepay-delay-ttl-ms}")

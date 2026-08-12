@@ -61,5 +61,6 @@ app:
     orderSepayCheckRoutingKey: orderSepayKey
     orderSepayDelayQueue: order.sepay.delay.queue
     orderSepayDelayRoutingKey: order.sepay.delay.routingkey
+    mailQueue: mailQueue 
     order-sepay-delay-ttl-ms: 43200000 
     #  43200000

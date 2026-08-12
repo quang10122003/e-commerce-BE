@@ -23,7 +23,8 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.integration.CloudflareTurnstile.service.TurnstileService;
-import shop.shop.integration.Resend.service.EmailService;
+import shop.shop.integration.RabbitMQ.QueueService;
+import shop.shop.integration.RabbitMQ.DTO.ResetPasswordProducer;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
 
@@ -35,7 +36,7 @@ public class PasswordResetService {
     UserRepo userRepo;
     PasswordEncoder passwordEncoder;
     TurnstileService turnstileService;
-    EmailService emailService;
+    QueueService webSocketService;
     PasswordResetTokenRepo passwordResetTokenRepo;
     AuthSupport authSupport;
     Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -89,7 +90,8 @@ public class PasswordResetService {
 
         passwordResetTokenRepo.save(resetToken);
 
-        emailService.SendResetPasswordMail(user.getEmail(), token);
+        ResetPasswordProducer resetPasswordProducer = new ResetPasswordProducer(email, token);
+        webSocketService.sendResetPasswordMailEvent(resetPasswordProducer);
 
         logger.info("yêu cầu lấy lại mk đc chấp nhận cho email:{}", request.getEmail());
         return ApiResponse.success(

@@ -1,19 +1,17 @@
-package shop.shop.integration.Resend.DTO.resquest;
+package shop.shop.integration.RabbitMQ.DTO;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import shop.shop.common.PaymentMethod;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateOrderMailDTO {
+public class CreateOrderMailProducer {
     private String email;
     private String shippingName;
     private String orderCode;
@@ -21,5 +19,5 @@ public class CreateOrderMailDTO {
     private PaymentMethod paymentMethod;
     private String shippingAddress;
     private BigDecimal totalAmount;
-    private List<CreateOrderItemMailDTO> items;
+    private List<OrderItemMailProducer> items;
 }
