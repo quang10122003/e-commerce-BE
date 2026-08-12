@@ -18,6 +18,7 @@ import shop.shop.auth.dto.request.ForgotPasswordRequest;
 import shop.shop.auth.dto.request.ResetPasswordRequest;
 import shop.shop.auth.entity.PasswordResetToken;
 import shop.shop.auth.repo.PasswordResetTokenRepo;
+import shop.shop.common.AuthProvider;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
@@ -71,6 +72,12 @@ public class PasswordResetService {
                     null);
         }
         User user = userOptional.get();
+        if(user.getProvider() == AuthProvider.GOOGLE){
+            logger.info("tài khoản mail: {} chưa đc đăng ký mới chỉ đăng nhập bằng gg nên ko thể lấy lại mk", request.getEmail());
+            return ApiResponse.success(
+                    "vui lòng vào mail của bạn check mail để reset mật khẩu",
+                    null);
+        }
 
         String token = UUID.randomUUID().toString();
 

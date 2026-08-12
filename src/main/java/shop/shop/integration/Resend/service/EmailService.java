@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import shop.shop.integration.Resend.DTO.respone.EmailContent;
+import shop.shop.integration.Resend.DTO.resquest.CreateOrderMailDTO;
 import shop.shop.integration.Resend.DTO.resquest.ResetPasswordMailDTO;
 
 @Service
@@ -23,7 +24,9 @@ public class EmailService {
     ResetPasswordMailTemplate resetPasswordMailTemplate;
     Logger logger = LoggerFactory.getLogger(this.getClass());
     RestClient restClient;
+    CreateOrderMailTemplate createOrderMailTemplate;
 
+    // gửi email khi reset mk
     public void SendResetPasswordMail(String emailUser, String token) {
         ResetPasswordMailDTO resetPasswordMailDTO = new ResetPasswordMailDTO(emailUser, token);
 
@@ -31,6 +34,13 @@ public class EmailService {
 
         sendEmail(content);
     }
+
+    // gửi email khi order đơn hàng
+    public void sendOrderMail(CreateOrderMailDTO data){
+        EmailContent content = createOrderMailTemplate.build(data);
+        sendEmail(content);
+    }
+
 
     private void sendEmail(EmailContent content) {
         try {
@@ -40,8 +50,9 @@ public class EmailService {
                     .body(content)
                     .retrieve()
                     .toBodilessEntity();
+            logger.info("gửi email {} cho email:{} thành công", content.getSubject(), content.getTo());
         } catch (Exception e) {
-            logger.error("gửi email reset password cho email:{} thất bại", content.getTo());
+            logger.error("gửi email {} cho email:{} thất bại",content.getSubject(), content.getTo());
         }
     }
 }

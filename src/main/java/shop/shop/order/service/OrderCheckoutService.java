@@ -15,6 +15,8 @@ import shop.shop.common.PaymentMethod;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserClass;
+import shop.shop.integration.Resend.DTO.resquest.CreateOrderMailDTO;
+import shop.shop.integration.Resend.service.EmailService;
 import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.order.dto.request.OrderRequest;
 import shop.shop.order.dto.response.CheckoutResponse;
@@ -46,6 +48,7 @@ public class OrderCheckoutService {
     CartLineItemRepository cartLineItemRepository;
     CatalogCacheService catalogCacheService;
     List<IOrderPaymentHandler> paymentHandlers; 
+    EmailService emailService;
     static SecureRandom RANDOM = new SecureRandom();
 
     // hàm tạo order duy nhất cho mọi phương thức thanh toán 
@@ -75,6 +78,8 @@ public class OrderCheckoutService {
 
         logger.info("user:{} tạo order:{} method:{} ordercode:{}", currentUser.getId(), orderDone.getId(),
                 method, orderCode);
+        CreateOrderMailDTO orderMailDto = new CreateOrderMailDTO(orderDone.getUser().getEmail(),orderDone.getShippingName(),orderCode,orderDone.getShippingPhone(),orderDone.getPaymentMethod(),orderDone.getShippingAddress(),orderDone.getTotalAmount(),orderDone.getItems());
+        emailService.sendOrderMail(orderMailDto);
 
         return CheckoutResponse.builder()
                 .orderCode(orderCode)
