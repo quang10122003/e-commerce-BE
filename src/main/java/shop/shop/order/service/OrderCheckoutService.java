@@ -14,7 +14,7 @@ import shop.shop.common.OrderStatus;
 import shop.shop.common.PaymentMethod;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.RabbitMQ.QueueService;
 import shop.shop.integration.RabbitMQ.DTO.CreateOrderMailProducer;
 import shop.shop.integration.RabbitMQ.DTO.OrderItemMailProducer;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class OrderCheckoutService {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
-    CurrentUserClass currentUserClass;
+    CurrentUserProvider currentUserClass;
     OrderRepository orderRepository;
     ProductRepository productRepository;
     CartLineItemRepository cartLineItemRepository;
@@ -96,7 +96,7 @@ public class OrderCheckoutService {
             orderDone.getTotalAmount(),
             itemDtos);
 
-        queueService.sendCreateOrderMailEvent(orderMailDto);
+        queueService.publish(orderMailDto);
 
         return CheckoutResponse.builder()
                 .orderCode(orderCode)

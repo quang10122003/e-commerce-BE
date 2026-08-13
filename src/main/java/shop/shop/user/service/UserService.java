@@ -21,7 +21,7 @@ import shop.shop.common.error.ApiError;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.user.entity.User;
 import shop.shop.user.mapper.UserMapper;
 import shop.shop.user.repos.UserRepo;
@@ -34,7 +34,7 @@ public class UserService {
    UserRepo userRepo;
    UserMapper userMapper;
    RoleRepository roleRepository;
-   CurrentUserClass currentUserClass;
+   CurrentUserProvider currentUserClass;
 
     // Lay thong tin user danh cho admin.
     public ApiResponse<AdminUserDetailResponse> getAdminUserById(Long userId) {

@@ -22,7 +22,7 @@ import shop.shop.common.AuthProvider;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.integration.CloudflareTurnstile.service.TurnstileService;
+import shop.shop.integration.CloudflareTurnstile.service.interfaces.ICaptchaVerifier;
 import shop.shop.integration.RabbitMQ.QueueService;
 import shop.shop.integration.RabbitMQ.DTO.ResetPasswordProducer;
 import shop.shop.user.entity.User;
@@ -35,7 +35,7 @@ public class PasswordResetService {
 
     UserRepo userRepo;
     PasswordEncoder passwordEncoder;
-    TurnstileService turnstileService;
+    ICaptchaVerifier captchaVerifier;
     QueueService webSocketService;
     PasswordResetTokenRepo passwordResetTokenRepo;
     AuthSupport authSupport;
@@ -58,7 +58,7 @@ public class PasswordResetService {
             throw new ApiError(ErrorCode.CAPTCHA_INVALID);
         }
 
-        boolean validCaptcha = turnstileService.verify(captchaToken);
+        boolean validCaptcha = captchaVerifier.verify(captchaToken);
 
         if (!validCaptcha) {
             throw new ApiError(ErrorCode.CAPTCHA_INVALID);
@@ -91,7 +91,7 @@ public class PasswordResetService {
         passwordResetTokenRepo.save(resetToken);
 
         ResetPasswordProducer resetPasswordProducer = new ResetPasswordProducer(email, token);
-        webSocketService.sendResetPasswordMailEvent(resetPasswordProducer);
+        webSocketService.publish(resetPasswordProducer);
 
         logger.info("yêu cầu lấy lại mk đc chấp nhận cho email:{}", request.getEmail());
         return ApiResponse.success(

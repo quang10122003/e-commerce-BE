@@ -39,5 +39,5 @@ public abstract class IEmailTemplate<T> {
                 .formatted(content);
     }
 
-    protected abstract EmailContent build(T data);
+    public abstract EmailContent build(T data);
 }

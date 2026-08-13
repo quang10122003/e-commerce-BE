@@ -27,6 +27,7 @@ import shop.shop.common.AuthProvider;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.security.AuthUtil;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
@@ -42,6 +43,7 @@ public class AuthenticationService {
     RoleRepository roleRepository;
     PasswordEncoder passwordEncoder;
     AuthSupport authSupport;
+    CurrentUserProvider currentUserProvider;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // hàm login
@@ -62,7 +64,7 @@ public class AuthenticationService {
             throw new ApiError(ErrorCode.USER_NOT_FOUND);
         }
 
-        authSupport.assertUserNotLocked(user);
+        currentUserProvider.assertUserNotLocked(user);
 
         String accessToken = authUtil.generateAccessToken(user);
         String refreshToken = authUtil.generateRefreshToken(user);
@@ -130,7 +132,7 @@ public class AuthenticationService {
             String email = authUtil.extractEmail(refreshToken);
             User user = userRepo.findByEmailIgnoreCase(email)
                     .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
-            authSupport.assertUserNotLocked(user);
+            currentUserProvider.assertUserNotLocked(user);
 
             if (!authUtil.isRefreshTokenValid(refreshToken, user)) {
                 throw new ApiError(ErrorCode.REFRESH_TOKEN_INVALID);
@@ -160,7 +162,7 @@ public class AuthenticationService {
                     .orElse(null);
 
             if (user != null) {
-                authSupport.assertUserNotLocked(user);
+                currentUserProvider.assertUserNotLocked(user);
             }
 
             boolean isValid = user != null && authUtil.isAccessTokenValid(accessToken, user);

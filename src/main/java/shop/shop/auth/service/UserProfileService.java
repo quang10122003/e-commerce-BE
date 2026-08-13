@@ -14,6 +14,7 @@ import shop.shop.auth.dto.response.CurrentUserResponse;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
 
@@ -24,12 +25,12 @@ public class UserProfileService {
 
     UserRepo userRepo;
     PasswordEncoder passwordEncoder;
-    AuthSupport authSupport;
+    CurrentUserProvider currentUserProvider;
 
     @Transactional(readOnly = true)
     // hàm lấy thông tin user 
     public ApiResponse<CurrentUserResponse> me() {
-        User user = authSupport.getCurrentAuthenticatedUser();
+        User user = currentUserProvider.getCurrentUser();
         return ApiResponse.success("Current user fetched", buildCurrentUserResponse(user));
     }
 
@@ -41,7 +42,7 @@ public class UserProfileService {
             throw new ApiError(ErrorCode.BAD_REQUEST);
         }
 
-        User user = authSupport.getCurrentAuthenticatedUser();
+        User user = currentUserProvider.getCurrentUser();
         user.setFullName(normalizeFullName(request.getFullName()));
         userRepo.save(user);
 
@@ -55,7 +56,7 @@ public class UserProfileService {
             throw new ApiError(ErrorCode.BAD_REQUEST);
         }
 
-        User user = authSupport.getCurrentAuthenticatedUser();
+        User user = currentUserProvider.getCurrentUser();
         String currentPassword = request.getCurrentPassword();
         String newPassword = request.getNewPassword();
 

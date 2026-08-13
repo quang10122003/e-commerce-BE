@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import shop.shop.integration.RabbitMQ.service.interfaces.IMailHandler;
+import shop.shop.integration.RabbitMQ.handle.interfaces.IMailHandler;
 
 @Component
 @RequiredArgsConstructor

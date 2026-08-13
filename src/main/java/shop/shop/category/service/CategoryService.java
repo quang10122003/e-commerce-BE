@@ -23,9 +23,9 @@ import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
-import shop.shop.integration.cloudinary.service.CloudinaryService;
+import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.product.service.ProductService;
 
@@ -38,11 +38,11 @@ import tools.jackson.core.type.TypeReference;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryService {
-    CurrentUserClass currentUserClass;
+    CurrentUserProvider currentUserClass;
     Logger logger = LoggerFactory.getLogger(this.getClass());
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
-    CloudinaryService cloudinaryService;
+    IMediaStorage iMediaStorage;
     ProductService productService;
     CatalogCacheService catalogCacheService;
 
@@ -82,7 +82,7 @@ public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
                 throw new ApiError(ErrorCode.BAD_REQUEST, "Anh danh muc khong duoc de trong");
             }
 
-            uploadedImage = cloudinaryService.uploadImages(List.of(file), "categories").get(0);
+            uploadedImage = iMediaStorage.uploadImages(List.of(file), "categories").get(0);
 
             Category category = new Category();
             category.setName(categoryName);
@@ -96,7 +96,7 @@ public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
             return ApiResponse.success("Tao danh muc thanh cong", categoryMapper.toSummary(savedCategory));
         } catch (Exception e) {
             if (uploadedImage != null) {
-                cloudinaryService.deleteImage(List.of(uploadedImage.getPublicId()));
+                iMediaStorage.deleteImage(List.of(uploadedImage.getPublicId()));
             }
             throw e;
         }
@@ -114,7 +114,7 @@ public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
 
         if (file != null && !file.isEmpty()) {
             String oldPublicId = category.getPublicIdUrl();
-            CloudinaryImage uploadedImage = cloudinaryService.uploadImages(List.of(file), "categories").get(0);
+            CloudinaryImage uploadedImage = iMediaStorage.uploadImages(List.of(file), "categories").get(0);
 
             registerImageCleanup(oldPublicId, uploadedImage.getPublicId());
 
@@ -163,14 +163,14 @@ public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
             // Luu anh moi thanh cong vao DB; khi Transactional commit thanh cong thi xoa anh cu.
             @Override
             public void afterCommit() {
-                cloudinaryService.deleteImage(List.of(oldPublicId));
+                iMediaStorage.deleteImage(List.of(oldPublicId));
             }
 
             // Khi Transactional ket thuc ma rollback thi xoa anh moi vua cap nhat.
             @Override
             public void afterCompletion(int status) {
                 if (status == STATUS_ROLLED_BACK) {
-                    cloudinaryService.deleteImage(List.of(uploadedPublicId));
+                    iMediaStorage.deleteImage(List.of(uploadedPublicId));
                 }
             }
         });
@@ -186,7 +186,7 @@ public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
             @Override
             public void afterCommit() {
                 logger.info("xóa ảnh trên cloudinary");
-                cloudinaryService.deleteImage(publicIds);
+                iMediaStorage.deleteImage(publicIds);
             }
         });
     }

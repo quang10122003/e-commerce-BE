@@ -1,3 +1,8 @@
+/**
+ * class định nghĩa các chính sách xử lý thanh toán theo  phương thức Sepay 
+ * trong vòng đời của đơn hàng, bao gồm xử lý khi đơn hàng bị hủy và kiểm tra
+ * điều kiện thanh toán trước khi thay đổi trạng thái đơn hàng.
+ */
 package shop.shop.order.policy;
 
 import lombok.AccessLevel;
@@ -14,6 +19,7 @@ import shop.shop.common.PaymentStatus;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.order.entity.Order;
+import shop.shop.order.policy.interfaces.IOrderPaymentPolicy;
 import shop.shop.payment.entity.PaymentEntity;
 import shop.shop.payment.repo.PaymentRepo;
 

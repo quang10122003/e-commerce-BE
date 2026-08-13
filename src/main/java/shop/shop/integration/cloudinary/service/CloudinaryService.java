@@ -15,17 +15,19 @@ import lombok.experimental.FieldDefaults;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
+import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class CloudinaryService {
+public class CloudinaryService implements IMediaStorage {
 
     private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of(
             "jpg", "jpeg", "jfif", "png", "gif", "webp", "bmp", "svg", "ico");
 
     Cloudinary cloudinary;
 
+    @Override
     public List<CloudinaryImage> uploadImages(List<MultipartFile> files, String folder) {
 
         // Kiem tra file hop le.
@@ -63,6 +65,7 @@ public class CloudinaryService {
                 .toList();
     }
 
+    //  Kiểm tra file có phải ảnh hợp lệ hay không (dựa vào content-type hoặc phần mở rộng file).
     private void validateImageFile(MultipartFile file) {
 
         String contentType = file.getContentType();
@@ -80,6 +83,8 @@ public class CloudinaryService {
         }
     }
 
+    // Lấy phần mở rộng của file (VD: "anh.PNG" -> "png"), trả về null nếu không xác
+    // định được.
     private String getFileExtension(String filename) {
         if (filename == null || filename.isBlank()) {
             return null;
@@ -93,6 +98,7 @@ public class CloudinaryService {
         return filename.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
     }
 
+    @Override
     public void deleteImage(List<String> publicIds) {
         publicIds.parallelStream().filter((publicId) -> publicId != null && !publicId.isBlank())
                 .forEach((publicId) -> {

@@ -21,7 +21,7 @@ import shop.shop.cart.repository.CartRepository;
 import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.redis.service.CartCacheService;
 import shop.shop.product.entity.Product;
 import shop.shop.common.ProductStatus;
@@ -44,7 +44,7 @@ public class CartService {
     CartLineItemRepository cartLineItemRepository;
     CartRepository cartRepository;
     ProductRepository productRepository;
-    CurrentUserClass currentUserClass;
+    CurrentUserProvider currentUserClass;
     CartMapper cartMapper;
     CartCacheService cartCacheService;
 

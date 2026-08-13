@@ -1,5 +1,5 @@
 // xử lý payment khai tạo order với payment sepay;
-package shop.shop.order.service;
+package shop.shop.order.handler;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -17,6 +17,7 @@ import lombok.experimental.NonFinal;
 import shop.shop.common.PaymentMethod;
 import shop.shop.common.PaymentStatus;
 import shop.shop.integration.RabbitMQ.QueueService;
+import shop.shop.integration.RabbitMQ.DTO.OrderSepayDelayEventProducer;
 import shop.shop.order.entity.Order;
 import shop.shop.order.service.interfaces.IOrderPaymentHandler;
 import shop.shop.payment.entity.PaymentEntity;
@@ -29,7 +30,7 @@ public class SepayPaymentHandler implements IOrderPaymentHandler {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
     PaymentRepo paymentRepo;
-    QueueService webSocketService;
+    QueueService queueService;
 
     @NonFinal
     @Value("${app.rabbitMq.order-sepay-delay-ttl-ms}")
@@ -56,7 +57,7 @@ public class SepayPaymentHandler implements IOrderPaymentHandler {
         PaymentEntity paymentDone = paymentRepo.save(payment);
 
         try {
-            webSocketService.sendOrderCreatedPayment(order.getId().toString());
+            queueService.publish(new OrderSepayDelayEventProducer(order.getId().toString()));
         } catch (AmqpException e) {
             logger.warn(
                     "rabbitMQ ko hoạt động order:{} ordercode:{} payment:{} payment của đơn hàng này sẽ ko tự động chuyển trạng thái khi hết time",

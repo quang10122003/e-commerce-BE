@@ -15,7 +15,7 @@ public class ResetPasswordMailTemplate extends IEmailTemplate<ResetPasswordMailD
     String resetPasswordMailSend = "support@daoxuanquang.dev";
 
     @Override
-    protected EmailContent build(ResetPasswordMailDTO data) {
+    public EmailContent build(ResetPasswordMailDTO data) {
         String resetLink = domain + "/reset-password?token="
                 + data.getToken();
 

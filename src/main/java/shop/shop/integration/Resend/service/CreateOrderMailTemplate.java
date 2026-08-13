@@ -22,7 +22,7 @@ public class CreateOrderMailTemplate extends IEmailTemplate<CreateOrderMailDTO> 
     private String emailOrderSend = "order@daoxuanquang.dev";
 
     @Override
-    protected EmailContent build(CreateOrderMailDTO data) {
+    public EmailContent build(CreateOrderMailDTO data) {
 
         // Render danh sách sản phẩm thành các dòng <tr>
         String itemsHtml = data.getItems().stream()

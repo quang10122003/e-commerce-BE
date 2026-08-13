@@ -17,12 +17,14 @@ import shop.shop.common.PaymentMethod;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.order.dto.response.OrderResponse;
 import shop.shop.order.entity.Order;
 import shop.shop.order.entity.OrderItem;
 import shop.shop.order.mapper.OrderMapper;
+import shop.shop.order.policy.OrderStatusTransitionPolicyRegistry;
+import shop.shop.order.policy.interfaces.IOrderStatusTransitionPolicy;
 import shop.shop.order.repo.OrderRepository;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
@@ -38,12 +40,13 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OrderLifecycleService {
     Logger logger = LoggerFactory.getLogger(this.getClass());
-    CurrentUserClass currentUserClass;
+    CurrentUserProvider currentUserClass;
     OrderRepository orderRepository;
     ProductRepository productRepository;
     OrderMapper orderMapper;
     CatalogCacheService catalogCacheService;
     OrderPaymentPolicyService orderPaymentPolicyService;
+    OrderStatusTransitionPolicyRegistry orderStatusTransitionPolicyRegistry;
 
     @Transactional(readOnly = true)
     // xem đơn hàng của user 
@@ -118,7 +121,7 @@ public class OrderLifecycleService {
 
         validateAdminStatusTransition(order, targetStatus);
         // goi orderPaymentPolicyService để xử lý role  payment khi chuyển đổi trang thái order
-        orderPaymentPolicyService.validatePaymentBeforeCompleteOrder(order, targetStatus);
+        orderPaymentPolicyService.validatePaymentBeforeChangeStatusOrder(order, targetStatus);
 
         order.setStatus(targetStatus);
 
@@ -157,27 +160,13 @@ public class OrderLifecycleService {
 
     // Kiểm tra trạng  thái order đích có hợp lệ theo trạng thái hiện tại và phương thức thanh toán.
     private void validateAdminStatusTransition(Order order, OrderStatus targetStatus) {
-        OrderStatus currentStatus = order.getStatus();
+        IOrderStatusTransitionPolicy policy = orderStatusTransitionPolicyRegistry.getPolicy(order.getStatus());
 
-        boolean validTransition = switch (currentStatus) {
-            case PENDING -> isValidPendingTransition(order, targetStatus);
-            case CONFIRMED -> targetStatus == OrderStatus.SHIPPING || targetStatus == OrderStatus.CANCELLED;
-            case SHIPPING -> targetStatus == OrderStatus.COMPLETED || targetStatus == OrderStatus.CANCELLED;
-            case COMPLETED, CANCELLED -> false;
-        };
-
-        if (!validTransition) {
+        if (!policy.canTransitionTo(order, targetStatus)) {
             throw new ApiError(ErrorCode.ILLEGAL_STATE, "Không thể đổi trạng thái đơn hàng");
         }
     }
 
-    // Kiểm tra các chuyển đổi hợp lệ khi đơn hàng đang ở trạng thái PENDING.
-    private boolean isValidPendingTransition(Order order, OrderStatus targetStatus) {
-        if (order.getPaymentMethod() != PaymentMethod.COD) {
-            return targetStatus == OrderStatus.CANCELLED;
-        }
-        return targetStatus == OrderStatus.CONFIRMED || targetStatus == OrderStatus.CANCELLED;
-    }
 
     // kiểm tra xem order có phải của user hay k
     private void validateCurrentUserOwnsOrder(Order order, User currentUser) {
@@ -188,8 +177,12 @@ public class OrderLifecycleService {
 
     // kiếm tra trang thái đơn hàng có hợp lệ cho việc hủy đơn hàng hay k
     private void validateUserCancelStatus(Order order) {
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new ApiError(ErrorCode.ILLEGAL_STATE, "Chỉ có thể hủy đơn hàng đang chờ xử lý");
+        IOrderStatusTransitionPolicy policy = orderStatusTransitionPolicyRegistry.getPolicy(order.getStatus());
+
+        if (!policy.canTransitionTo(order, OrderStatus.CANCELLED)) {
+            throw new ApiError(
+                    ErrorCode.ILLEGAL_STATE,
+                    "Không thể hủy đơn hàng ở trạng thái hiện tại");
         }
     }
 

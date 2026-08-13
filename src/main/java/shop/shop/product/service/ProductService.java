@@ -36,9 +36,9 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.common.until.CurrentUserClass;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
-import shop.shop.integration.cloudinary.service.CloudinaryService;
+import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 import shop.shop.integration.redis.service.CatalogCacheService;
 import shop.shop.integration.redis.service.CartCacheService;
 import shop.shop.product.dto.response.ProductSummaryResponse;
@@ -61,9 +61,9 @@ public class ProductService {
     ProductMapper productMapper;
     AdminProductMapper adminProductMapper;
     CartLineItemRepository cartLineItemRepository;
-    CloudinaryService cloudinaryService;
+    IMediaStorage iMediaStorage;
     CategoryRepository categoryRepository;
-    CurrentUserClass currentUserClass;
+    CurrentUserProvider currentUserClass;
     CatalogCacheService catalogCacheService;
     CartCacheService cartCacheService;
     Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -270,7 +270,7 @@ public class ProductService {
 
         try {
             // Tai thumbnailImage len Cloudinary.
-            thumbnailImage = cloudinaryService.uploadImages(List.of(thumbnail), "productsThumbnail")
+            thumbnailImage = iMediaStorage.uploadImages(List.of(thumbnail), "productsThumbnail")
                     .stream()
                     .findFirst()
                     .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST));
@@ -345,7 +345,7 @@ public class ProductService {
             MultipartFile thumbnail = request == null ? null : request.getThumbnail();
             if (thumbnail != null && !thumbnail.isEmpty()) {
                 // Tai thumbnailImage len Cloudinary.
-                CloudinaryImage thumbnailImage = cloudinaryService.uploadImages(List.of(thumbnail), "productsThumbnail")
+                CloudinaryImage thumbnailImage = iMediaStorage.uploadImages(List.of(thumbnail), "productsThumbnail")
                         .stream()
                         .findFirst()
                         .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST));
@@ -492,7 +492,7 @@ public class ProductService {
             return List.of();
         }
 
-        return cloudinaryService.uploadImages(images, "products");
+        return iMediaStorage.uploadImages(images, "products");
     }
 
     // Chuyen ket qua upload Cloudinary thanh entity anh phu va gan nguoc product de
@@ -526,7 +526,7 @@ public class ProductService {
             public void afterCompletion(int status) {
                 if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
                     logger.error("có lỗi ghi database ảnh trên Cloudinary rollbank");
-                    cloudinaryService.deleteImage(publicIds);
+                    iMediaStorage.deleteImage(publicIds);
                 }
             }
         });
@@ -541,7 +541,7 @@ public class ProductService {
                 .toList();
 
         if (!publicIds.isEmpty()) {
-            cloudinaryService.deleteImage(publicIds);
+            iMediaStorage.deleteImage(publicIds);
         }
     }
 
@@ -617,7 +617,7 @@ public class ProductService {
 
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             logger.info("database commit thành công xóa ảnh trên Cloudinary");
-            cloudinaryService.deleteImage(publicIds);
+            iMediaStorage.deleteImage(publicIds);
             return;
         }
 
@@ -625,7 +625,7 @@ public class ProductService {
             @Override
             public void afterCommit() {
                 logger.info("database commit thành công xóa ảnh trên Cloudinary");
-                cloudinaryService.deleteImage(publicIds);
+                iMediaStorage.deleteImage(publicIds);
             }
         });
     }

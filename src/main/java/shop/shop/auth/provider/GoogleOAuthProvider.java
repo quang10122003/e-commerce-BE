@@ -18,6 +18,7 @@ import shop.shop.common.AuthProvider;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.security.AuthUtil;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
@@ -31,6 +32,7 @@ public class GoogleOAuthProvider implements IOAuthProvider {
     RoleRepository roleRepository;
     AuthUtil authUtil;
     AuthSupport authSupport;
+    CurrentUserProvider currentUserProvider;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
@@ -73,7 +75,7 @@ public class GoogleOAuthProvider implements IOAuthProvider {
             }
         }
 
-        authSupport.assertUserNotLocked(user);
+        currentUserProvider.assertUserNotLocked(user);
         String accessToken = authUtil.generateAccessToken(user);
         String refreshToken = authUtil.generateRefreshToken(user);
 

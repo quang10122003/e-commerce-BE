@@ -1,5 +1,5 @@
 // Interface định nghĩa handler xử lý message theo từng routing keyd
-package shop.shop.integration.RabbitMQ.service.interfaces;
+package shop.shop.integration.RabbitMQ.handle.interfaces;
 
 public interface IMailHandler{
     String routingKey();

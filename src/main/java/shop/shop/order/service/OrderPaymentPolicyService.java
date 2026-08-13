@@ -10,23 +10,24 @@ import org.springframework.stereotype.Service;
 import shop.shop.common.CancelledBy;
 import shop.shop.common.OrderStatus;
 import shop.shop.order.entity.Order;
-import shop.shop.order.policy.IOrderPaymentPolicy;
+import shop.shop.order.policy.interfaces.IOrderPaymentPolicy;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OrderPaymentPolicyService {
 
-    List<IOrderPaymentPolicy> policies; 
+    List<IOrderPaymentPolicy> policies;
 
     public void handlePaymentWhenCancelOrder(Order order, CancelledBy cancelledBy) {
         findPolicy(order).handlePaymentWhenCancelOrder(order, cancelledBy);
     }
 
-    public void validatePaymentBeforeCompleteOrder(Order order, OrderStatus targetStatus) {
+    public void validatePaymentBeforeChangeStatusOrder(Order order, OrderStatus targetStatus) {
         findPolicy(order).validatePaymentBeforeChangeStatus(order, targetStatus);
     }
 
+    // lấy policies theo method của order
     private IOrderPaymentPolicy findPolicy(Order order) {
         return policies.stream()
                 .filter(p -> p.getPaymentMethod() == order.getPaymentMethod())
@@ -38,6 +39,14 @@ public class OrderPaymentPolicyService {
         @Override
         public shop.shop.common.PaymentMethod getPaymentMethod() {
             return null;
+        }
+
+        @Override
+        public void handlePaymentWhenCancelOrder(Order order, CancelledBy cancelledBy) {
+        }
+
+        @Override
+        public void validatePaymentBeforeChangeStatus(Order order, OrderStatus targetStatus) {
         }
     };
 }

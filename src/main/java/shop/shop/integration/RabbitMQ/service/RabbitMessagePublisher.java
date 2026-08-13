@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import shop.shop.integration.RabbitMQ.service.interfaces.WebSocketSender;
+import shop.shop.integration.RabbitMQ.service.interfaces.MessagePublisher;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 @Component
-public class StompWebSocketproducer implements  WebSocketSender {
+public class RabbitMessagePublisher implements  MessagePublisher {
     RabbitTemplate rabbitTemplate;
 
 

@@ -2,7 +2,6 @@ package shop.shop.integration.redis.service;
 
 import java.time.Duration;
 
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 

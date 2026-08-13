@@ -1,28 +1,20 @@
-// Class này đảm nhận "cách xây TokenResponse, kiểm tra khóa tài khoản hoặc parse Bearer Token có thay đổi". Đây là hạ tầng dùng chung.
+// Class này đảm nhận "cách xây TokenResponse, parse Bearer Token". Đây là hạ tầng dùng chung.
 package shop.shop.auth.service;
 
 import java.util.Locale;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import shop.shop.auth.dto.response.AuthResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-// import shop.shop.security.AuthUtil;
 import shop.shop.user.entity.User;
-import shop.shop.user.repos.UserRepo;
 
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthSupport {
-    // AuthUtil authUtil;
-    UserRepo userRepo;
 
     // kiểm tra email
     public String normalizeEmail(String email) {
@@ -30,13 +22,6 @@ public class AuthSupport {
             return null;
         }
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    // check kiểm tra xem tài khoản có bị khóa hay k
-    public void assertUserNotLocked(User user) {
-        if (user.isLocked()) {
-            throw new LockedException(ErrorCode.ACCOUNT_LOCKED.getMessage());
-        }
     }
 
     // tạo repone auth 
@@ -70,24 +55,5 @@ public class AuthSupport {
         }
 
         return token;
-    }
-
-    // Lưu ý: trùng ý tưởng với CurrentUserClass đang dùng ở module Order
-    // (đã ghi trong review, mục "Medium: Trùng lặp logic lấy user hiện tại").
-    // Khác biệt là ở đây có thêm assertUserNotLocked. Nếu muốn gộp hẳn về 1
-    // CurrentUserProvider chung toàn hệ thống, làm ở bước refactor sau.
-    public User getCurrentAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            throw new ApiError(ErrorCode.UNAUTHORIZED);
-        }
-
-        User user = userRepo.findByEmailIgnoreCase(authentication.getName())
-                .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
-
-        assertUserNotLocked(user);
-        return user;
     }
 }

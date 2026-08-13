@@ -10,17 +10,19 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import shop.shop.integration.CloudflareTurnstile.DTO.repone.TurnstileResponse;
+import shop.shop.integration.CloudflareTurnstile.service.interfaces.ICaptchaVerifier;
 
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TurnstileService {
+public class TurnstileService implements ICaptchaVerifier {
 
     final RestClient restClient;
 
     @Value("${app.turnstile.secret-key}")
     String secretKey;
 
+    @Override
     public boolean verify(String token) {
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
