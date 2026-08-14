@@ -7,13 +7,11 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import shop.shop.admin.Projection.PaymentStatsProjection;
 import shop.shop.common.PaymentStatus;
 import shop.shop.payment.entity.PaymentEntity;
 
-@Repository
 public interface PaymentRepo extends JpaRepository<PaymentEntity, Long> {
     Optional<PaymentEntity> findByTransactionRef(String transactionRef);
 

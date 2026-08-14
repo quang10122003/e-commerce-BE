@@ -49,7 +49,7 @@ import shop.shop.order.service.OrderLifecycleService;
 import shop.shop.order.service.RevenueReportQueryService;
 import shop.shop.payment.service.PaymentService;
 import shop.shop.product.repository.ProductRepository;
-import shop.shop.product.service.ProductService;
+import shop.shop.product.service.ProductAdminService;
 import shop.shop.user.repos.UserRepo;
 import shop.shop.user.service.UserService;
 
@@ -61,7 +61,7 @@ public class AdminService {
         UserService userService;
         UserRepo userRepo;
         ProductRepository productRepository;
-        ProductService productService;
+        ProductAdminService productAdminService;
         OrderRepository orderRepository;
         OrderLifecycleService orderLifecycleService;
         RevenueReportQueryService revenueReportQueryService;
@@ -84,7 +84,7 @@ public class AdminService {
 
         public ApiResponse<AdminProductListResponse> getAdminProducts(Long catagoryId, String search, String status,
                         Pageable pageable) {
-                return productService.getAdminProducts(catagoryId, search, status, pageable);
+                return productAdminService.getAdminProducts(catagoryId, search, status, pageable);
         }
 
         public ApiResponse<AdminUserDetailResponse> updateAdminUser(Long userId, AdminUserUpdateRequest request) {
@@ -96,7 +96,7 @@ public class AdminService {
         }
 
         public ApiResponse<AdminProductStatusResponse> updateProductStatus(Long productId, ProductStatus status) {
-                return productService.updateProductStatus(productId, status);
+                return productAdminService.updateProductStatus(productId, status);
         }
 
         public ApiResponse<Void> deleteUser(Long userId) {
@@ -104,17 +104,17 @@ public class AdminService {
         }
 
         public ApiResponse<Void> deleteProduct(Long productId) {
-                return productService.deleteProduct(productId);
+                return productAdminService.deleteProduct(productId);
         }
 
         public ApiResponse<AdminProductSummaryResponse> createProduct(AdminCreateProductRequest data,
                         MultipartFile thumbnail, List<MultipartFile> images) {
-                return productService.createProduct(data, thumbnail, images);
+                return productAdminService.createProduct(data, thumbnail, images);
         }
 
         public ApiResponse<AdminProductSummaryResponse> updateProduct(Long productId,
                         AdminUpdateProductRequest request) {
-                return productService.updateProduct(productId, request);
+                return productAdminService.updateProduct(productId, request);
         }
 
         public ApiResponse<AdminOverviewRepone> getOverview() {

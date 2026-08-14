@@ -27,7 +27,7 @@ import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 import shop.shop.integration.cloudinary.service.TransactionalMediaCleanup;
 import shop.shop.integration.redis.service.CacheInvalidationService;
 import shop.shop.integration.redis.service.interfaces.ICacheService;
-import shop.shop.product.service.ProductService;
+import shop.shop.product.service.ProductAdminService;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class CategoryService {
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
     IMediaStorage iMediaStorage;
-    ProductService productService;
+    ProductAdminService productAdminService;
     ICacheService cacheService;
     CacheInvalidationService cacheInvalidationService;
     TransactionalMediaCleanup transactionalMediaCleanup;
@@ -141,8 +141,8 @@ public class CategoryService {
 
         // Tan dung lai nghiep vu xoa san pham de don cart item, xoa san pham va len
         // lich xoa anh san pham.
-        productService.findProductsByCategoryId(id)
-                .forEach(productService::deleteProductCore);
+        productAdminService.findProductsByCategoryId(id)
+                .forEach(productAdminService::deleteProductCore);
 
         // Xoa danh muc sau khi cac san pham thuoc danh muc da duoc xu ly.
         List<String> publicIds = collectCategoryImagePublicIds(category);

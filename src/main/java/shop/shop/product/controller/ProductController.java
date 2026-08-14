@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -17,7 +16,8 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.product.dto.response.ProductSummaryResponse;
 import shop.shop.product.dto.response.Productdetail;
-import shop.shop.product.service.ProductService;
+import shop.shop.product.service.ProductCatalogQueryService;
+
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequiredArgsConstructor
 public class ProductController {
 
-    private final ProductService productService;
+    private final ProductCatalogQueryService productCatalogQueryService;
 
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<PagedResponse<ProductSummaryResponse>>> getActiveProducts(
@@ -34,19 +34,20 @@ public class ProductController {
             @RequestParam(name = "search", required = false) String search) {
         return ResponseEntity.status(200).body(
                 ApiResponse.success("Active products fetched",
-                        productService.getActiveProductsPaged(categoryId, search, pageable)));
+                        productCatalogQueryService.getActiveProductsPaged(categoryId, search, pageable)));
     }
 
     @GetMapping("/topSelling")
     public ResponseEntity<ApiResponse<List<ProductSummaryResponse>>> getActiveProductsTopSelling() {
         return ResponseEntity.status(200)
-                .body(ApiResponse.success("Lấy thành công sản phẩm top", productService.getTopSelling()));
+                .body(ApiResponse.success("Lấy thành công sản phẩm top", productCatalogQueryService.getTopSelling()));
 
     }
 
     @GetMapping("{id}")
     public ResponseEntity<ApiResponse<Productdetail>> getProductByid(@PathVariable(name = "id") Long id) {
         return ResponseEntity.status(200).body(
-                ApiResponse.success("Lấy thành công sản phẩm có id: " + id, productService.getProductById(id)));
+                ApiResponse.success("Lấy thành công sản phẩm có id: " + id, 
+                        productCatalogQueryService.getProductById(id)));
     }
 }

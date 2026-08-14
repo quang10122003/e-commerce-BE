@@ -2,7 +2,6 @@ package shop.shop.integration.Resend.service;
 
 import org.springframework.stereotype.Component;
 import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import shop.shop.config.MailSenderProperties;
