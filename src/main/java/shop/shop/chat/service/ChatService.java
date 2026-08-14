@@ -24,6 +24,7 @@ import shop.shop.common.MessageType;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.product.entity.Product;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
@@ -44,11 +45,12 @@ public class ChatService {
     UserRepo userRepo;
     ChatMapper chatMapper;
     SimpMessagingTemplate messagingTemplate;
+    CurrentUserProvider currentUserProvider;
 
     // Tao phong chat moi cho user hien tai theo san pham.
     @Transactional
     public ApiResponse<ChatRoomResponse> createRoom(Long productId) {
-        User user = getCurrentUser();
+        User user = currentUserProvider.getCurrentUser();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
@@ -63,7 +65,7 @@ public class ChatService {
     // Lay phong chat cua user hien tai theo san pham.
     @Transactional(readOnly = true)
     public ApiResponse<ChatRoomResponse> getCurrentUserRoomByProduct(Long productId) {
-        User user = getCurrentUser();
+        User user = currentUserProvider.getCurrentUser();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
@@ -78,7 +80,7 @@ public class ChatService {
     // Lay danh sach phong chat cua user hien tai.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getCurrentUserRooms(String search) {
-        User user = getCurrentUser();
+        User user = currentUserProvider.getCurrentUser();
         String normalizedSearch = normalize(search);
         List<ChatRoom> rooms = normalizedSearch == null
                 ? chatRoomRepository.findRoomsByUser(user.getId())
@@ -95,7 +97,7 @@ public class ChatService {
     // Lay danh sach phong chat cho admin va sap xep theo tin nhan moi nhat.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getAdminRooms(String search) {
-        User admin = getCurrentUser();
+        User admin = currentUserProvider.getCurrentUser();
         String normalizedSearch = normalize(search);
 
         List<ChatRoom> sourceRooms = normalizedSearch == null
@@ -134,7 +136,7 @@ public class ChatService {
     // Lay toan bo tin nhan trong mot phong chat sau khi kiem tra quyen truy cap.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatMessageResponse>> getMessages(Long roomId) {
-        User user = getCurrentUser();
+        User user = currentUserProvider.getCurrentUser();
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
 
@@ -191,7 +193,7 @@ public class ChatService {
     // Danh dau cac tin nhan chua doc trong room la da doc boi user hien tai.
     @Transactional
     public MarkRoomAsReadResult markRoomAsRead(Long roomId) {
-        User viewer = getCurrentUser();
+        User viewer = currentUserProvider.getCurrentUser();
 
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
@@ -256,18 +258,6 @@ public class ChatService {
                         .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
 
         return toRoomResponseForViewer(room, adminViewer);
-    }
-
-    // Lay user hien tai tu SecurityContext cua request HTTP.
-    private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new ApiError(ErrorCode.UNAUTHORIZED);
-        }
-
-        return userRepo.findByEmailIgnoreCase(auth.getName())
-                .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
     }
 
     // Kiem tra user co quyen xem hoac thao tac voi room hay khong.

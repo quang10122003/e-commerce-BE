@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class OrderCheckoutService {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
-    CurrentUserProvider currentUserClass;
+    CurrentUserProvider currentUserProvider;
     OrderRepository orderRepository;
     ProductRepository productRepository;
     CartLineItemRepository cartLineItemRepository;
@@ -60,7 +60,7 @@ public class OrderCheckoutService {
         PaymentMethod method = resolvePaymentMethod(request.getPaymentMethod());
         IOrderPaymentHandler IOrderPaymentHandler = findHandler(method);
 
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         Order order = prepareOrder(currentUser, request);
         order.setPaymentMethod(method);
 

@@ -38,7 +38,7 @@ import tools.jackson.core.type.TypeReference;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryService {
-    CurrentUserProvider currentUserClass;
+    CurrentUserProvider currentUserProvider;
     Logger logger = LoggerFactory.getLogger(this.getClass());
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
@@ -95,7 +95,7 @@ public class CategoryService {
 
             Category savedCategory = categoryRepository.save(category);
             cacheInvalidationService.categoryChanged();
-            logger.info("admin id:{} thêm 1 danh mục mới id:{}", currentUserClass.getCurrentUser().getId(),
+            logger.info("admin id:{} thêm 1 danh mục mới id:{}", currentUserProvider.getCurrentUser().getId(),
                     savedCategory.getId());
 
             return ApiResponse.success("Tao danh muc thanh cong", categoryMapper.toSummary(savedCategory));
@@ -128,7 +128,7 @@ public class CategoryService {
             category.setImage(uploadedImage.getUrl());
             category.setPublicIdUrl(uploadedImage.getPublicId());
         }
-        logger.info("admin id:{} chỉnh sửa danh mục Id:{} với data {} ", currentUserClass.getCurrentUser().getId(),
+        logger.info("admin id:{} chỉnh sửa danh mục Id:{} với data {} ", currentUserProvider.getCurrentUser().getId(),
                 id, data);
         cacheInvalidationService.categoryChanged();
         return ApiResponse.success("da chinh sua danh muc thanh cong", categoryMapper.toSummary(category));
@@ -151,7 +151,7 @@ public class CategoryService {
         cacheInvalidationService.categoryChanged();
 
         transactionalMediaCleanup.deleteAfterCommit(publicIds.stream().distinct().toList());
-        logger.info("admin {} xóa danh mục {} ", currentUserClass.getCurrentUser().getId(), id);
+        logger.info("admin {} xóa danh mục {} ", currentUserProvider.getCurrentUser().getId(), id);
 
         return ApiResponse.success("Xoa danh muc thanh cong voi id: " + id, null);
     }

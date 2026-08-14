@@ -62,7 +62,7 @@ public class ProductAdminService {
     CartLineItemRepository cartLineItemRepository;
     IMediaStorage iMediaStorage;
     CategoryRepository categoryRepository;
-    CurrentUserProvider currentUserClass;
+    CurrentUserProvider currentUserProvider;
     ICacheService cacheService;
     CacheInvalidationService cacheInvalidationService;
     TransactionalMediaCleanup mediaCleanup;
@@ -132,7 +132,7 @@ public class ProductAdminService {
         invalidateProductCachesAfterCommit(productId);
 
         logger.info("admin voi id:{} vừa cập nhật trang thái sản phẩm {} -> {} với sản phẩm id:{} ",
-                currentUserClass.getCurrentUser().getId(), beforeStatus, status, productId);
+                currentUserProvider.getCurrentUser().getId(), beforeStatus, status, productId);
 
         return ApiResponse.success("Cap nhat trang thai san pham thanh cong",
                 AdminProductStatusResponse.builder()
@@ -194,8 +194,8 @@ public class ProductAdminService {
         invalidateProductCachesAfterCommit(savedProduct.getId());
 
         logger.info("admin với với id:{} và username: {} đã thêm 1 sản phẩm mới",
-                currentUserClass.getCurrentUser().getId(),
-                currentUserClass.getCurrentUser().getEmail());
+                currentUserProvider.getCurrentUser().getId(),
+                currentUserProvider.getCurrentUser().getEmail());
 
         return ApiResponse.success("Them san pham thanh cong", adminProductMapper.toSummary(savedProduct));
     }
@@ -261,7 +261,7 @@ public class ProductAdminService {
         } catch (RuntimeException ex) {
             logger.error(
                     "admin voi id: {} chỉnh sửa sản phẩm id:{} nhưng có lỗi trong quá trình update ảnh lên Cloudinary",
-                    currentUserClass.getCurrentUser().getId(), productId);
+                    currentUserProvider.getCurrentUser().getId(), productId);
 
             // Nếu lỗi trong quá trình upload ảnh thì xóa các ảnh vừa upload lên Cloudinary.
             cleanupUploadedImages(uploadedCloudinaryImages);
@@ -278,7 +278,7 @@ public class ProductAdminService {
         invalidateProductCachesAfterCommit(savedProduct.getId());
 
         logger.info("admin với id: {} cập nhật sản phẩm với id:{} thành công",
-                currentUserClass.getCurrentUser().getId(), productId);
+                currentUserProvider.getCurrentUser().getId(), productId);
 
         return ApiResponse.success("Cap nhat san pham thanh cong", adminProductMapper.toSummary(savedProduct));
     }
@@ -291,7 +291,7 @@ public class ProductAdminService {
 
         deleteProductCore(product);
 
-        logger.info("admin với id:{} xóa sản phẩm id:{} thành công", currentUserClass.getCurrentUser().getId(),
+        logger.info("admin với id:{} xóa sản phẩm id:{} thành công", currentUserProvider.getCurrentUser().getId(),
                 productId);
 
         return ApiResponse.success("Xoa san pham thanh cong voi id: " + productId, null);

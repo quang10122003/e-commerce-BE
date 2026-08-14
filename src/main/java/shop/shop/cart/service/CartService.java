@@ -45,14 +45,14 @@ public class CartService {
     CartLineItemRepository cartLineItemRepository;
     CartRepository cartRepository;
     ProductRepository productRepository;
-    CurrentUserProvider currentUserClass;
+    CurrentUserProvider currentUserProvider;
     CartMapper cartMapper;
     ICacheService cacheService;
     CacheInvalidationService cacheInvalidationService;
 
     @Transactional(readOnly = true)
     public CartResponse getCurrentUserCart() {
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         String cacheKey = CacheKeys.cartByUser(currentUser.getId());
 
         // Lấy giỏ hàng từ cache Redis nếu dữ liệu đã tồn tại.
@@ -72,7 +72,7 @@ public class CartService {
     public CartResponse addToCurrentUserCart(AddCartItemRequest request) {
         validateAddToCartRequest(request);
 
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         Cart cart = cartRepository.findByUserId(currentUser.getId())
                 .orElseGet(() -> createCart(currentUser));
         Product product = productRepository.findById(request.productId())
@@ -98,7 +98,7 @@ public class CartService {
     public CartResponse removeFromCurrentUserCart(Long productId) {
         validateProductId(productId);
 
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         CartLineItem cartLineItem = cartLineItemRepository.findByCart_User_IdAndProduct_Id(
                 currentUser.getId(),
                 productId)

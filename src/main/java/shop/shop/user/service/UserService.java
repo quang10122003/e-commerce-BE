@@ -34,7 +34,7 @@ public class UserService {
    UserRepo userRepo;
    UserMapper userMapper;
    RoleRepository roleRepository;
-   CurrentUserProvider currentUserClass;
+   CurrentUserProvider currentUserProvider;
 
     // Lay thong tin user danh cho admin.
     public ApiResponse<AdminUserDetailResponse> getAdminUserById(Long userId) {
@@ -116,7 +116,8 @@ public class UserService {
         }
 
         User savedUser = userRepo.save(user);
-        logger.info("admin id:{} cập nhật thông tin cho user với thông tin cập nhật như sau:{}",currentUserClass.getCurrentUser().getId(),userId,request);
+        logger.info("admin id:{} cập nhật thông tin cho user với thông tin cập nhật như sau:{}",
+                currentUserProvider.getCurrentUser().getId(),userId,request);
         return ApiResponse.success("Cap nhat thong tin nguoi dung thanh cong",
                 userMapper.toDetail(savedUser));
     }
@@ -160,7 +161,7 @@ public class UserService {
                 .build();
 
         String message = user.isLocked() ? "Khoa tai khoan thanh cong" : "Mo khoa tai khoan thanh cong";
-        logger.info("admin id:{} {} cho user id: {}",currentUserClass.getCurrentUser().getId(),message,userId);
+        logger.info("admin id:{} {} cho user id: {}", currentUserProvider.getCurrentUser().getId(),message,userId);
         return ApiResponse.success(message, response);
     }
 
@@ -178,7 +179,7 @@ public class UserService {
             throw new ApiError(ErrorCode.ADMIN_ACCOUNT_DELETE_NOT_ALLOWED);
         }
         userRepo.delete(user);
-        logger.info("admin id:{} xóa user id:{}",currentUserClass.getCurrentUser().getId(),userId);
+        logger.info("admin id:{} xóa user id:{}", currentUserProvider.getCurrentUser().getId(),userId);
 
         return ApiResponse.success("Xóa người dùng thành công với id: " + userId, null);
     }

@@ -39,7 +39,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OrderLifecycleService {
     Logger logger = LoggerFactory.getLogger(this.getClass());
-    CurrentUserProvider currentUserClass;
+    CurrentUserProvider currentUserProvider;
     OrderRepository orderRepository;
     ProductRepository productRepository;
     OrderMapper orderMapper;
@@ -50,7 +50,7 @@ public class OrderLifecycleService {
     @Transactional(readOnly = true)
     // xem đơn hàng của user 
     public List<OrderResponse> getCurrentUserOrders() {
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         List<Order> orders = orderRepository.findAllByUserIdWithItems(currentUser.getId());
         return orderMapper.toResponseList(orders);
     }
@@ -58,7 +58,7 @@ public class OrderLifecycleService {
     // Hủy đơn hàng của user hiện tại nếu đơn còn ở trạng thái cho phép.
     @Transactional
     public OrderResponse cancelCurrentUserOrder(Long orderId) {
-        User currentUser = currentUserClass.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ApiError(ErrorCode.ORDER_NOT_FOUND));
 
@@ -137,7 +137,7 @@ public class OrderLifecycleService {
             cacheInvalidationService.productsChanged(productIds);
         }
         logger.info("admin:{} chuyển trạng thái đơn hàng:{} với order code:{} về {}",
-                currentUserClass.getCurrentUser().getId(), orderId, order.getOrderCode(), status);
+                currentUserProvider.getCurrentUser().getId(), orderId, order.getOrderCode(), status);
         return ApiResponse.success("cập nhật trạng thái đơn hàng thành công",
                 orderMapper.toAdminOrderItem(orderRepository.save(order)));
     }
