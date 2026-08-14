@@ -1,8 +1,10 @@
 package shop.shop.chat.controller;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,15 +13,17 @@ import shop.shop.chat.Dto.repone.ChatRoomResponse;
 import shop.shop.chat.Dto.repone.MarkRoomAsReadResult;
 import shop.shop.chat.service.ChatService;
 import shop.shop.common.dto.response.ApiResponse;
+import shop.shop.integration.wedsocket.service.StompWebSocketSender;
 
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 public class ChatController {
-    private final ChatService chatService;
-    private final SimpMessagingTemplate messagingTemplate;
+    ChatService chatService;
+    StompWebSocketSender stompWebSocketSender;
 
     @PostMapping("/chat/rooms/{productId}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> createRoom(@PathVariable Long productId) {
@@ -56,12 +60,12 @@ public class ChatController {
 
         // Phat read-receipt cho tat ca client dang mo room de cap nhat trang thai da doc theo thoi gian thuc.
         if (result.getReadReceipt() != null) {
-            messagingTemplate.convertAndSend("/topic/chat/rooms/" + roomId, result.getReadReceipt());
+            stompWebSocketSender.send("/topic/chat/rooms/" + roomId, result.getReadReceipt());
         }
 
         // Khi admin doc tin cua customer, inbox admin cung can bo badge unread ma khong phai refresh hoac polling.
         if (result.getAdminRoomSummary() != null) {
-            messagingTemplate.convertAndSend("/topic/admin/chat/rooms", result.getAdminRoomSummary());
+            stompWebSocketSender.send("/topic/admin/chat/rooms", result.getAdminRoomSummary());
         }
 
         return ResponseEntity.ok(ApiResponse.success("Đánh dấu đã đọc thành công", result.getRoom()));

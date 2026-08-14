@@ -19,6 +19,7 @@ import java.security.Principal;
 public class ChatWebSocketController {
     ChatService chatService;
 
+    // gửi tin nhắn 
     @MessageMapping("/chat/rooms/{roomId}/send")
     public void sendMessage(
             @DestinationVariable Long roomId,

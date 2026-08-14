@@ -19,7 +19,7 @@ public class CorsConfig {
         configuration.setAllowedOrigins(List.of(
                 "https://shopmini.daoxuanquang.dev",
                 "https://admin.daoxuanquang.dev",
-            "http://localhost:3000"));
+            "http://localhost:3000","http://localhost:3001"));
 
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

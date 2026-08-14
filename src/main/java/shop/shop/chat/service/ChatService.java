@@ -4,9 +4,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +22,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.integration.wedsocket.service.StompWebSocketSender;
 import shop.shop.product.entity.Product;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
@@ -44,7 +42,7 @@ public class ChatService {
     ProductRepository productRepository;
     UserRepo userRepo;
     ChatMapper chatMapper;
-    SimpMessagingTemplate messagingTemplate;
+    StompWebSocketSender stompWebSocketSender;
     CurrentUserProvider currentUserProvider;
 
     // Tao phong chat moi cho user hien tai theo san pham.
@@ -183,11 +181,11 @@ public class ChatService {
                 .toList();
 
         // Gui tung tin nhan theo dung thu tu da luu: SYSTEM truoc, TEXT sau.
-        responses.forEach(response -> messagingTemplate.convertAndSend("/topic/chat/rooms/" + roomId, response));
+        responses.forEach(response -> stompWebSocketSender.send("/topic/chat/rooms/" + roomId, response));
 
         // Gui tom tat moi de danh sach phong cap nhat lastMessage va unreadCount realtime.
         ChatRoomResponse roomSummary = getRoomSummaryForBroadcast(roomId);
-        messagingTemplate.convertAndSend("/topic/chat/rooms", roomSummary);
+        stompWebSocketSender.send("/topic/chat/rooms", roomSummary);
     }
 
     // Danh dau cac tin nhan chua doc trong room la da doc boi user hien tai.

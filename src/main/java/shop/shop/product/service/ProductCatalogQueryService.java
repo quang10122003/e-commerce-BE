@@ -8,6 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import shop.shop.common.ProductStatus;
 import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.dto.response.PagedResponse;
@@ -21,8 +24,10 @@ import shop.shop.product.repository.ProductRepository;
 import tools.jackson.core.type.TypeReference;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@RequiredArgsConstructor
 public class ProductCatalogQueryService {
-     ProductRepository productRepository;
+    ProductRepository productRepository;
     ProductMapper productMapper;
     ICacheService cacheService;
 
