@@ -37,6 +37,7 @@ import shop.shop.admin.dto.response.AdminUserLockResponse;
 import shop.shop.admin.dto.response.AdminUserOverview;
 import shop.shop.admin.dto.response.RoleRepone;
 import shop.shop.category.dto.response.CategorySummaryResponse;
+import shop.shop.category.service.CategoryOverviewQueryService;
 import shop.shop.category.service.CategoryService;
 import shop.shop.common.OrderStatus;
 import shop.shop.common.PaymentMethod;
@@ -62,12 +63,11 @@ public class AdminService {
         ProductRepository productRepository;
         ProductService productService;
         OrderRepository orderRepository;
-        // Trước: OrderService orderService (God Service).
-        // Sau: tách theo đúng trách nhiệm — vòng đời đơn vs báo cáo doanh thu.
         OrderLifecycleService orderLifecycleService;
         RevenueReportQueryService revenueReportQueryService;
         CategoryService categoryService;
         PaymentService paymentService;
+        CategoryOverviewQueryService categoryOverviewQueryService;
 
         public ApiResponse<List<RoleRepone>> getRole() {
                 return roleService.getRole();
@@ -181,7 +181,7 @@ public class AdminService {
         }
 
         public ApiResponse<AdminCatagoryOverviewRepone> getOverviewCategory() {
-                return categoryService.getOverviewCategory();
+                return categoryOverviewQueryService.getOverviewCategory();
         }
 
         public ApiResponse<AdminPaymentsRepone> getPayments(String search, String status, LocalDate from,
