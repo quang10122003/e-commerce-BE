@@ -28,6 +28,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.security.AuthUtil;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
@@ -44,6 +45,7 @@ public class AuthenticationService {
     PasswordEncoder passwordEncoder;
     AuthSupport authSupport;
     CurrentUserProvider currentUserProvider;
+    ValidationUtils validationUtils;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // hàm login
@@ -81,7 +83,7 @@ public class AuthenticationService {
     public ApiResponse<AuthResponse> signup(SingUpResquest request) {
         String email = authSupport.normalizeEmail(request.getEmail());
         String password = request.getPassword();
-        String fullName = normalizeFullName(request.getFullName());
+        String fullName = validationUtils.normalize(request.getFullName());
 
         validateSignupInput(email, password, fullName);
 
@@ -197,8 +199,4 @@ public class AuthenticationService {
         }
     }
 
-    // validation ffull name 
-    private String normalizeFullName(String fullName) {
-        return fullName == null ? null : fullName.trim();
-    }
 }

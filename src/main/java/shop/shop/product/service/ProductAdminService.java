@@ -40,6 +40,7 @@ import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.TransactionalMediaCleanup;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
@@ -66,12 +67,13 @@ public class ProductAdminService {
     ICacheService cacheService;
     CacheInvalidationService cacheInvalidationService;
     TransactionalMediaCleanup mediaCleanup;
+    ValidationUtils validationUtils;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // Lấy danh sách sản phẩm admin theo bộ lọc và phân trang.
     public ApiResponse<AdminProductListResponse> getAdminProducts(Long catagoryId, String search, String status,
             Pageable pageable) {
-        String normalizedSearch = normalize(search);
+        String normalizedSearch = validationUtils.normalize(search);
         ProductStatus normalizedStatus = normalizeStatus(status);
         String cacheKey = CacheKeys.adminProductList(
                 catagoryId,
@@ -341,7 +343,7 @@ public class ProductAdminService {
             return;
         }
 
-        if ((request.getName() != null && normalize(request.getName()) == null)
+        if ((request.getName() != null && validationUtils.normalize(request.getName()) == null)
                 || (request.getPrice() != null && request.getPrice().signum() < 0)
                 || hasFractionPart(request.getPrice())
                 || (request.getStock() != null && request.getStock() < 0)) {
@@ -376,7 +378,7 @@ public class ProductAdminService {
         }
 
         Set<String> normalizedUrls = new HashSet<>(deleteImageUrls.stream()
-                .map(this::normalize)
+                .map(validationUtils::normalize)
                 .filter(url -> url != null)
                 .toList());
 
@@ -411,7 +413,7 @@ public class ProductAdminService {
     // Kiểm tra request để phát hiện lỗi.
     private void validateCreateProductRequest(AdminCreateProductRequest request, MultipartFile thumbnail) {
         if (request == null
-                || normalize(request.getName()) == null
+                || validationUtils.normalize(request.getName()) == null
                 || request.getPrice() == null
                 || request.getPrice().signum() < 0
                 || hasFractionPart(request.getPrice())
@@ -451,7 +453,7 @@ public class ProductAdminService {
     private void registerUploadedImageCleanupOnRollback(List<CloudinaryImage> images) {
         List<String> publicIds = images.stream()
                 .map(CloudinaryImage::getPublicId)
-                .filter(publicId -> publicId != null && !publicId.isBlank())
+                .filter(validationUtils::hasText)
                 .distinct()
                 .toList();
 
@@ -462,7 +464,7 @@ public class ProductAdminService {
     private void cleanupUploadedImages(List<CloudinaryImage> images) {
         List<String> publicIds = images.stream()
                 .map(CloudinaryImage::getPublicId)
-                .filter(publicId -> publicId != null && !publicId.isBlank())
+                .filter(validationUtils::hasText)
                 .distinct()
                 .toList();
 
@@ -479,18 +481,9 @@ public class ProductAdminService {
         return value != null && value.stripTrailingZeros().scale() > 0;
     }
 
-    // Chuẩn hóa chuỗi.
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
+    // Chuyển chuỗi trạng thái sang ProductStatus và báo lỗi nếu giá trị không hợp lệ.
     private ProductStatus normalizeStatus(String status) {
-        String normalizedStatus = normalize(status);
+        String normalizedStatus = validationUtils.normalize(status);
 
         if (normalizedStatus == null) {
             return null;

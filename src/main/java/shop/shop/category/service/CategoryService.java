@@ -22,6 +22,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 import shop.shop.integration.cloudinary.service.TransactionalMediaCleanup;
@@ -47,6 +48,7 @@ public class CategoryService {
     ICacheService cacheService;
     CacheInvalidationService cacheInvalidationService;
     TransactionalMediaCleanup transactionalMediaCleanup;
+    ValidationUtils validationUtils;
 
     // Lấy toàn bộ danh mục dùng chung cho user/admin
     public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
@@ -73,11 +75,11 @@ public class CategoryService {
     public ApiResponse<CategorySummaryResponse> createCategori(AdminCreateCategoriRequest data, MultipartFile file) {
         CloudinaryImage uploadedImage = null;
         try {
-            if (data == null || data.getName() == null || data.getName().isBlank()) {
+            if (data == null || !validationUtils.hasText(data.getName())) {
                 throw new ApiError(ErrorCode.BAD_REQUEST, "Ten danh muc khong duoc de trong");
             }
 
-            String categoryName = data.getName().trim();
+            String categoryName = validationUtils.normalize(data.getName());
             if (categoryRepository.existsByNormalizedName(categoryName)) {
                 throw new ApiError(ErrorCode.CATEGORY_ALREADY_EXISTS);
             }
@@ -113,8 +115,8 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ApiError(ErrorCode.CATEGORY_NOT_FOUND));
 
-        if (data.getName() != null && !data.getName().isBlank()) {
-            category.setName(data.getName().trim());
+        if (validationUtils.hasText(data.getName())) {
+            category.setName(validationUtils.normalize(data.getName()));
         }
 
         if (file != null && !file.isEmpty()) {

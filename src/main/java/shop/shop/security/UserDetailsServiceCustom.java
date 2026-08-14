@@ -3,6 +3,7 @@ package shop.shop.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
 
@@ -11,12 +12,13 @@ import shop.shop.user.repos.UserRepo;
 public class UserDetailsServiceCustom implements UserDetailsService {
 
     private final UserRepo userRepo;
+    private final ValidationUtils validationUtils;
 
     // Lấy user và convert thành UserDetails.
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
-        User user = userRepo.findByEmailIgnoreCase(normalizeEmail(email))
+        User user = userRepo.findByEmailIgnoreCase(validationUtils.normalizeEmail(email))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return org.springframework.security.core.userdetails.User.withUsername(user.getEmail())
@@ -26,7 +28,4 @@ public class UserDetailsServiceCustom implements UserDetailsService {
                 .build();
     }
 
-    private String normalizeEmail(String email) {
-        return email == null ? null : email.trim().toLowerCase();
-    }
 }

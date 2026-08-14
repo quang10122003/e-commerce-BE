@@ -27,6 +27,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.config.SepayProperties;
 import shop.shop.order.entity.Order;
 import shop.shop.order.repo.OrderRepository;
@@ -53,6 +54,7 @@ public class PaymentService {
     PaymentWebhookOutcomeRegistry paymentWebhookOutcomeRegistry;
     CurrentUserProvider currentUserProvider;
     AdminPaymentMapper adminPaymentMapper;
+    ValidationUtils validationUtils;
 
     // lấy qr code
     public QrRepone getQr(QrRquest request) {
@@ -187,8 +189,9 @@ public class PaymentService {
 
     public ApiResponse<AdminPaymentsRepone> getPayment(String search, String status, LocalDate from,
             LocalDate to) {
-        String normalizedSearch = normalize(search);
-        PaymentStatus normalizedStatus = normalizePaymentStatus(status);
+        String normalizedSearch = validationUtils.normalize(search);
+        PaymentStatus normalizedStatus = validationUtils.parseEnumIgnoreCase(status, PaymentStatus.class,
+                ErrorCode.BAD_REQUEST);
 
         LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
         LocalDateTime toDt = to != null ? to.atTime(23, 59, 59) : null;
@@ -209,26 +212,4 @@ public class PaymentService {
                 .failed(statuss.getFailed()).build());
     }
 
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private PaymentStatus normalizePaymentStatus(String status) {
-        String normalizedStatus = normalize(status);
-
-        if (normalizedStatus == null) {
-            return null;
-        }
-
-        try {
-            return PaymentStatus.valueOf(normalizedStatus.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new ApiError(ErrorCode.BAD_REQUEST);
-        }
-    }
 }

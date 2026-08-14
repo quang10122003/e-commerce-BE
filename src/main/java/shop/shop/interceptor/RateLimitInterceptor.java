@@ -9,6 +9,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import shop.shop.common.RateLimitRule;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.redis.service.interfaces.IRateLimitService;
 
 @Component
@@ -17,6 +18,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final IRateLimitService rateLimitService;
     private final RateLimitRuleRegistry ruleRegistry;
+    private final ValidationUtils validationUtils;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -42,7 +44,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     // lấy ip của user
     private String getClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
+        if (validationUtils.hasText(forwarded)) {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();

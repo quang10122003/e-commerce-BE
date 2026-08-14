@@ -8,16 +8,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 
 @Component
 public class TransactionalMediaCleanup {
     IMediaStorage mediaStorage;
+    ValidationUtils validationUtils;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // Thêm publicId<id để xóa ảnh>  hợp lệ vào danh sách, bỏ qua giá trị null hoặc chuỗi rỗng.
     public void addPublicId(List<String> publicIds, String publicId) {
-        if (publicId != null && !publicId.isBlank()) {
+        if (validationUtils.hasText(publicId)) {
             publicIds.add(publicId);
         }
     }

@@ -1,7 +1,6 @@
 // Class này đảm nhận "cách xây TokenResponse, parse Bearer Token". Đây là hạ tầng dùng chung.
 package shop.shop.auth.service;
 
-import java.util.Locale;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Component;
 import shop.shop.auth.dto.response.AuthResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.user.entity.User;
 
 @Component
@@ -16,12 +16,11 @@ import shop.shop.user.entity.User;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthSupport {
 
+    ValidationUtils validationUtils;
+
     // kiểm tra email
     public String normalizeEmail(String email) {
-        if (email == null) {
-            return null;
-        }
-        return email.trim().toLowerCase(Locale.ROOT);
+        return validationUtils.normalizeEmail(email);
     }
 
     // tạo repone auth 

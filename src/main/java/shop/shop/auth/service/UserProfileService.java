@@ -15,6 +15,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.user.entity.User;
 import shop.shop.user.repos.UserRepo;
 
@@ -26,6 +27,7 @@ public class UserProfileService {
     UserRepo userRepo;
     PasswordEncoder passwordEncoder;
     CurrentUserProvider currentUserProvider;
+    ValidationUtils validationUtils;
 
     @Transactional(readOnly = true)
     // hàm lấy thông tin user 
@@ -43,7 +45,7 @@ public class UserProfileService {
         }
 
         User user = currentUserProvider.getCurrentUser();
-        user.setFullName(normalizeFullName(request.getFullName()));
+        user.setFullName(validationUtils.normalize(request.getFullName()));
         userRepo.save(user);
 
         return ApiResponse.success("Cap nhat thong tin tai khoan thanh cong", buildCurrentUserResponse(user));
@@ -77,11 +79,6 @@ public class UserProfileService {
         userRepo.save(user);
 
         return ApiResponse.success("Doi mat khau thanh cong", null);
-    }
-
-    // validation fullname
-    private String normalizeFullName(String fullName) {
-        return fullName == null ? null : fullName.trim();
     }
 
     // build repone trả thông tin user 

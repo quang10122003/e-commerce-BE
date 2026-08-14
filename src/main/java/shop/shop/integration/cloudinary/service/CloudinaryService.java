@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 
@@ -26,6 +27,7 @@ public class CloudinaryService implements IMediaStorage {
             "jpg", "jpeg", "jfif", "png", "gif", "webp", "bmp", "svg", "ico");
 
     Cloudinary cloudinary;
+    ValidationUtils validationUtils;
 
     @Override
     public List<CloudinaryImage> uploadImages(List<MultipartFile> files, String folder) {
@@ -86,7 +88,7 @@ public class CloudinaryService implements IMediaStorage {
     // Lấy phần mở rộng của file (VD: "anh.PNG" -> "png"), trả về null nếu không xác
     // định được.
     private String getFileExtension(String filename) {
-        if (filename == null || filename.isBlank()) {
+        if (!validationUtils.hasText(filename)) {
             return null;
         }
 
@@ -100,7 +102,7 @@ public class CloudinaryService implements IMediaStorage {
 
     @Override
     public void deleteImage(List<String> publicIds) {
-        publicIds.parallelStream().filter((publicId) -> publicId != null && !publicId.isBlank())
+        publicIds.parallelStream().filter(validationUtils::hasText)
                 .forEach((publicId) -> {
                     try {
                         Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap(

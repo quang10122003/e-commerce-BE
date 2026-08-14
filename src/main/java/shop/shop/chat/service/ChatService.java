@@ -22,6 +22,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.wedsocket.service.StompWebSocketSender;
 import shop.shop.product.entity.Product;
 import shop.shop.product.repository.ProductRepository;
@@ -44,6 +45,7 @@ public class ChatService {
     ChatMapper chatMapper;
     StompWebSocketSender stompWebSocketSender;
     CurrentUserProvider currentUserProvider;
+    ValidationUtils validationUtils;
 
     // Tao phong chat moi cho user hien tai theo san pham.
     @Transactional
@@ -79,7 +81,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getCurrentUserRooms(String search) {
         User user = currentUserProvider.getCurrentUser();
-        String normalizedSearch = normalize(search);
+        String normalizedSearch = validationUtils.normalize(search);
         List<ChatRoom> rooms = normalizedSearch == null
                 ? chatRoomRepository.findRoomsByUser(user.getId())
                 : chatRoomRepository.findRoomsByUserAndProductName(user.getId(), normalizedSearch);
@@ -96,7 +98,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getAdminRooms(String search) {
         User admin = currentUserProvider.getCurrentUser();
-        String normalizedSearch = normalize(search);
+        String normalizedSearch = validationUtils.normalize(search);
 
         List<ChatRoom> sourceRooms = normalizedSearch == null
                 ? chatRoomRepository.findRoomsForAdmin(admin.getId())
@@ -122,15 +124,6 @@ public class ChatService {
     }
 
     // Chuẩn hóa từ khóa tìm kiếm trước khi truyền xuống repository.
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     // Lay toan bo tin nhan trong mot phong chat sau khi kiem tra quyen truy cap.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatMessageResponse>> getMessages(Long roomId) {

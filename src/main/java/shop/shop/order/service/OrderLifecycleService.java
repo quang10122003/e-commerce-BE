@@ -17,6 +17,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.redis.service.CacheInvalidationService;
 import shop.shop.order.dto.response.OrderResponse;
 import shop.shop.order.entity.Order;
@@ -46,6 +47,7 @@ public class OrderLifecycleService {
     CacheInvalidationService cacheInvalidationService;
     OrderPaymentPolicyService orderPaymentPolicyService;
     OrderStatusTransitionPolicyRegistry orderStatusTransitionPolicyRegistry;
+    ValidationUtils validationUtils;
 
     @Transactional(readOnly = true)
     // xem đơn hàng của user 
@@ -85,8 +87,9 @@ public class OrderLifecycleService {
     @Transactional(readOnly = true)
     public ApiResponse<AdminOrdersRepone> getAdminOrders(String search, String status, LocalDate from,
             LocalDate to) {
-        String normalizedSearch = normalize(search);
-        OrderStatus normalizedStatus = normalizeOrderStatus(status);
+        String normalizedSearch = validationUtils.normalize(search);
+        OrderStatus normalizedStatus = validationUtils.parseEnumIgnoreCase(status, OrderStatus.class,
+                ErrorCode.BAD_REQUEST);
 
         LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
         LocalDateTime toDt = to != null ? to.atTime(23, 59, 59) : null;
@@ -116,7 +119,8 @@ public class OrderLifecycleService {
     public ApiResponse<AdminOrderItemRepone> updateAdminOrderStatus(Long orderId, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ApiError(ErrorCode.ORDER_NOT_FOUND));
-        OrderStatus targetStatus = normalizeRequiredOrderStatus(status);
+        OrderStatus targetStatus = validationUtils.parseEnumIgnoreCase(status, OrderStatus.class,
+                ErrorCode.BAD_REQUEST);
 
         validateAdminStatusTransition(order, targetStatus);
         // goi orderPaymentPolicyService để xử lý role  payment khi chuyển đổi trang thái order
@@ -140,20 +144,6 @@ public class OrderLifecycleService {
                 currentUserProvider.getCurrentUser().getId(), orderId, order.getOrderCode(), status);
         return ApiResponse.success("cập nhật trạng thái đơn hàng thành công",
                 orderMapper.toAdminOrderItem(orderRepository.save(order)));
-    }
-
-    private OrderStatus normalizeRequiredOrderStatus(String status) {
-        String normalizedStatus = normalize(status);
-
-        if (normalizedStatus == null) {
-            throw new ApiError(ErrorCode.BAD_REQUEST);
-        }
-
-        try {
-            return OrderStatus.valueOf(normalizedStatus.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new ApiError(ErrorCode.BAD_REQUEST, "Trạng thái đơn hàng không hợp lệ");
-        }
     }
 
     // Kiểm tra trạng  thái order đích có hợp lệ theo trạng thái hiện tại và phương thức thanh toán.
@@ -187,30 +177,6 @@ public class OrderLifecycleService {
     //  hoàn trả stock của sản phẩm khi hủy đơn
     private void restoreStockWhenCancelOrder(Order order) {
         productRepository.restoreStockByOrderId(order.getId());
-    }
-
-    // chuẩn hóa string
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    // Chuyển đổi chuỗi status sang OrderStatus và kiểm tra giá trị hợp lệ
-    private OrderStatus normalizeOrderStatus(String status) {
-        String normalizedStatus = normalize(status);
-
-        if (normalizedStatus == null) {
-            return null;
-        }
-
-        try {
-            return OrderStatus.valueOf(normalizedStatus.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new ApiError(ErrorCode.BAD_REQUEST);
-        }
     }
 
     // tính % tỉ lệ đơn hàng thành công

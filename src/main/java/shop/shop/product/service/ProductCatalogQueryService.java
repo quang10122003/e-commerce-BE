@@ -16,6 +16,7 @@ import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.redis.service.interfaces.ICacheService;
 import shop.shop.product.dto.response.ProductSummaryResponse;
 import shop.shop.product.dto.response.Productdetail;
@@ -30,6 +31,7 @@ public class ProductCatalogQueryService {
     ProductRepository productRepository;
     ProductMapper productMapper;
     ICacheService cacheService;
+    ValidationUtils validationUtils;
 
     // Lấy danh sách sản phẩm public dạng phân trang, cache theo bộ lọc và paging.
     public PagedResponse<ProductSummaryResponse> getActiveProductsPaged(Long categoryId, String search,
@@ -67,7 +69,7 @@ public class ProductCatalogQueryService {
 
     // Lấy sản phẩm đang bán theo danh mục và từ khóa tìm kiếm.
     public Page<ProductSummaryResponse> getActiveProducts(Long categoryId, String search, Pageable pageable) {
-        String normalizedSearch = normalize(search);
+        String normalizedSearch = validationUtils.normalize(search);
 
         if (normalizedSearch == null) {
             if (categoryId != null) {
@@ -117,11 +119,4 @@ public class ProductCatalogQueryService {
     }
 
     // chuẩn hóa chuỗi
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 }

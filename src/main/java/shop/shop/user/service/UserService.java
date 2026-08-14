@@ -22,6 +22,7 @@ import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.dto.response.PagedResponse;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.user.entity.User;
 import shop.shop.user.mapper.UserMapper;
 import shop.shop.user.repos.UserRepo;
@@ -35,6 +36,7 @@ public class UserService {
    UserMapper userMapper;
    RoleRepository roleRepository;
    CurrentUserProvider currentUserProvider;
+   ValidationUtils validationUtils;
 
     // Lay thong tin user danh cho admin.
     public ApiResponse<AdminUserDetailResponse> getAdminUserById(Long userId) {
@@ -46,21 +48,13 @@ public class UserService {
         return ApiResponse.success("Lay thong tin nguoi dung thanh cong", response);
     }
 
-    // Chuan hoa gia tri tim kiem dau vao.
-    private String normalize(String value) {
-        if (value == null)
-            return null;
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     // Lay danh sach user cho admin.
     public ApiResponse<AdminUserListResponse> getAdminUsers(
             String search, String role, String status, Pageable pageable) {
 
-        String normalizedSearch = normalize(search);
-        String normalizedRole = normalize(role);
-        String normalizedStatus = normalize(status);
+        String normalizedSearch = validationUtils.normalize(search);
+        String normalizedRole = validationUtils.normalize(role);
+        String normalizedStatus = validationUtils.normalize(status);
 
         if (normalizedStatus != null
                 && !"ACTIVE".equalsIgnoreCase(normalizedStatus)
@@ -105,7 +99,7 @@ public class UserService {
         }
 
         if (request.getFullName() != null) {
-            user.setFullName(normalizeRequiredValue(request.getFullName(), ErrorCode.FULL_NAME_REQUIRED));
+            user.setFullName(validationUtils.requireNormalized(request.getFullName(), ErrorCode.FULL_NAME_REQUIRED));
         }
 
         if (request.getRole() != null) {
@@ -123,22 +117,14 @@ public class UserService {
     }
 
     private String normalizeEmailForUpdate(String email) {
-        return normalizeRequiredValue(email, ErrorCode.EMAIL_REQUIRED).toLowerCase();
+        return validationUtils.requireNormalized(email, ErrorCode.EMAIL_REQUIRED).toLowerCase();
     }
 
     private String normalizeRoleForUpdate(String role) {
-        String normalizedRole = normalizeRequiredValue(role, ErrorCode.ADMIN_USER_ROLE_INVALID);
+        String normalizedRole = validationUtils.requireNormalized(role, ErrorCode.ADMIN_USER_ROLE_INVALID);
         return normalizedRole.regionMatches(true, 0, "ROLE_", 0, "ROLE_".length())
                 ? normalizedRole.substring("ROLE_".length())
                 : normalizedRole;
-    }
-
-    private String normalizeRequiredValue(String value, ErrorCode errorCode) {
-        String normalizedValue = normalize(value);
-        if (normalizedValue == null) {
-            throw new ApiError(errorCode);
-        }
-        return normalizedValue;
     }
 
     // Khoa hoac mo khoa user.

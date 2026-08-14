@@ -22,6 +22,7 @@ import shop.shop.common.AuthProvider;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.CloudflareTurnstile.service.interfaces.ICaptchaVerifier;
 import shop.shop.integration.RabbitMQ.QueueService;
 import shop.shop.integration.RabbitMQ.DTO.ResetPasswordProducer;
@@ -39,6 +40,7 @@ public class PasswordResetService {
     QueueService webSocketService;
     PasswordResetTokenRepo passwordResetTokenRepo;
     AuthSupport authSupport;
+    ValidationUtils validationUtils;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // hàm nhận yêu cầu quên mk để gửi mail
@@ -50,11 +52,11 @@ public class PasswordResetService {
         String email = authSupport.normalizeEmail(request.getEmail());
         String captchaToken = request.getCaptchaToken();
 
-        if (email == null || email.isBlank()) {
+        if (!validationUtils.hasText(email)) {
             throw new ApiError(ErrorCode.EMAIL_REQUIRED);
         }
 
-        if (captchaToken == null || captchaToken.isBlank()) {
+        if (!validationUtils.hasText(captchaToken)) {
             throw new ApiError(ErrorCode.CAPTCHA_INVALID);
         }
 
@@ -108,11 +110,11 @@ public class PasswordResetService {
         String token = request.getToken();
         String newPassword = request.getNewPassword();
 
-        if (token == null || token.isBlank()) {
+        if (!validationUtils.hasText(token)) {
             throw new ApiError(ErrorCode.RESET_TOKEN_NOT_FOUND);
         }
 
-        if (newPassword == null || newPassword.isBlank()) {
+        if (!validationUtils.hasText(newPassword)) {
             throw new ApiError(ErrorCode.PASSWORD_REQUIRED);
         }
         if (newPassword.length() < 6) {
