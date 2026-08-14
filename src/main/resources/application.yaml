@@ -36,9 +36,11 @@ spring:
     api-secret: ${CLOUDINARY_API_SECRET}
 
 app:
+  mail:
+    order-sender: ${MAIL_ORDER_SENDER:order@daoxuanquang.dev}
+    reset-password-sender: ${MAIL_RESET_PASSWORD_SENDER:support@daoxuanquang.dev}
+
   frontend-url: ${DOMAIN:http://localhost:3000}
-  # # email dùng để gửi resend
-  # form-email: support@daoxuanquang.dev
 
   jwt:
     secret: ${JWT_SECRET}
@@ -54,6 +56,9 @@ app:
 
   sepay:
     secret-key-webhook: ${SECRET_KEY_WEBHOOK_SEPAY}
+    bank: ${SEPAY_BANK:MSB}
+    account-number: ${SEPAY_ACCOUNT_NUMBER:SBSEPAY4L58YTRESWZP}
+    qr-url-template: "https://qr.sepay.vn/img?bank=%s&acc=%s&template=compact&amount=%s&des=%s"
 
   rabbitMq:
     exchange: exchange

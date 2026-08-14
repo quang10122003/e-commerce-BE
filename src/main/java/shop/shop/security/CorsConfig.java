@@ -18,7 +18,8 @@ public class CorsConfig {
         // Chỉ cho phép 2 domain frontend được gọi API/WebSocket.
         configuration.setAllowedOrigins(List.of(
                 "https://shopmini.daoxuanquang.dev",
-                "https://admin.daoxuanquang.dev"));
+                "https://admin.daoxuanquang.dev",
+            "http://localhost:3000"));
 
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

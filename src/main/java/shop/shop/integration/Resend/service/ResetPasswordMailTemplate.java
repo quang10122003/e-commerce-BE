@@ -3,16 +3,18 @@ package shop.shop.integration.Resend.service;
 import org.springframework.stereotype.Component;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import shop.shop.config.MailSenderProperties;
 import shop.shop.integration.Resend.DTO.respone.EmailContent;
 import shop.shop.integration.Resend.DTO.resquest.ResetPasswordMailDTO;
 import shop.shop.integration.Resend.service.interfaces.IEmailTemplate;
 
 @Component
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@RequiredArgsConstructor
 public class ResetPasswordMailTemplate extends IEmailTemplate<ResetPasswordMailDTO> {
-    String resetPasswordMailSend = "support@daoxuanquang.dev";
+     MailSenderProperties mailSenderProperties;
 
     @Override
     public EmailContent build(ResetPasswordMailDTO data) {
@@ -20,7 +22,7 @@ public class ResetPasswordMailTemplate extends IEmailTemplate<ResetPasswordMailD
                 + data.getToken();
 
         EmailContent contenet = new EmailContent(
-                resetPasswordMailSend,
+                mailSenderProperties.resetPasswordSender(),
                 data.getEmail(),
                 "Reset password",
                 wrapHtml(

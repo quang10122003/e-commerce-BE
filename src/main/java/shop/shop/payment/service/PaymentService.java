@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import shop.shop.admin.Projection.PaymentStatsProjection;
 import shop.shop.admin.dto.response.AdminPayementItemRepone;
 import shop.shop.admin.dto.response.AdminPaymentsRepone;
-import shop.shop.admin.dto.response.AdminProductSummaryResponse;
 import shop.shop.admin.mapper.AdminPaymentMapper;
 import shop.shop.common.CancelledBy;
 import shop.shop.common.OrderStatus;
@@ -32,6 +31,7 @@ import shop.shop.common.PaymentStatus;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
+import shop.shop.config.SepayProperties;
 import shop.shop.order.entity.Order;
 import shop.shop.order.repo.OrderRepository;
 import shop.shop.payment.DTO.repone.QrRepone;
@@ -54,16 +54,7 @@ public class PaymentService {
     UserRepo userRepo;
     SimpMessagingTemplate messagingTemplate;
     ProductRepository productRepository;
-
-    // cấu tk nhận tiền ( hiện tại đang dùng sepay test)
-    // Template tạo URL QR Sepay, giữ nguyên nếu vẫn dùng dịch vụ qr.sepay.vn.
-    static String SEPAY_QR_URL_TEMPLATE = "https://qr.sepay.vn/img?bank=%s&acc=%s&template=compact&amount=%s&des=%s";
-
-    // Mã ngân hàng nhận tiền, thay theo mã ngân hàng của tài khoản thật.
-    static String BANK = "MSB";
-
-    // Số tài khoản nhận tiền, thay bằng tài khoản ngân hàng dùng để nhận chuyển khoản.
-    static String ACC_BANK = "SBSEPAY4L58YTRESWZP";
+    SepayProperties sepayProperties;
 
     AdminPaymentMapper adminPaymentMapper;
 
@@ -129,9 +120,9 @@ public class PaymentService {
     private String buildQrcode(Order order) {
 
         return String.format(
-                SEPAY_QR_URL_TEMPLATE,
-                BANK,
-                ACC_BANK,
+                sepayProperties.qrUrlTemplate(),
+                sepayProperties.bank(),
+                sepayProperties.accountNumber(),
                 order.getTotalAmount().toPlainString(),
                 order.getOrderCode());
     }

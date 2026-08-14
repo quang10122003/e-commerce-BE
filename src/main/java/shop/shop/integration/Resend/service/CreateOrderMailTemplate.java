@@ -8,18 +8,21 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import shop.shop.common.PaymentMethod;
+import shop.shop.config.MailSenderProperties;
 import shop.shop.integration.Resend.DTO.respone.EmailContent;
 import shop.shop.integration.Resend.DTO.resquest.CreateOrderMailDTO;
 import shop.shop.integration.Resend.service.interfaces.IEmailTemplate;
 
 @Component
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@RequiredArgsConstructor
 public class CreateOrderMailTemplate extends IEmailTemplate<CreateOrderMailDTO> {
-    private String emailOrderSend = "order@daoxuanquang.dev";
+    MailSenderProperties mailSenderProperties;
 
     @Override
     public EmailContent build(CreateOrderMailDTO data) {
@@ -57,7 +60,7 @@ public class CreateOrderMailTemplate extends IEmailTemplate<CreateOrderMailDTO> 
                 .collect(Collectors.joining());
 
         EmailContent content = new EmailContent(
-                emailOrderSend,
+                mailSenderProperties.orderSender(),
                 data.getEmail(),
                 "Xác nhận đơn hàng #" + data.getOrderCode(),
                 wrapHtml(
