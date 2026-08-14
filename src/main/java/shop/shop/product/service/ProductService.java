@@ -39,8 +39,8 @@ import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.cloudinary.DTO.CloudinaryImage;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
-import shop.shop.integration.redis.service.CatalogCacheService;
-import shop.shop.integration.redis.service.CartCacheService;
+import shop.shop.integration.redis.service.CacheInvalidationService;
+import shop.shop.integration.redis.service.interfaces.ICacheService;
 import shop.shop.product.dto.response.ProductSummaryResponse;
 import shop.shop.product.dto.response.Productdetail;
 import shop.shop.common.ProductStatus;
@@ -64,8 +64,8 @@ public class ProductService {
     IMediaStorage iMediaStorage;
     CategoryRepository categoryRepository;
     CurrentUserProvider currentUserClass;
-    CatalogCacheService catalogCacheService;
-    CartCacheService cartCacheService;
+    ICacheService cacheService;
+    CacheInvalidationService cacheInvalidationService;
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // Lấy danh sách sản phẩm public dạng phân trang, cache theo bộ lọc và paging.
@@ -77,7 +77,7 @@ public class ProductService {
                 pageable.getPageSize(),
                 pageable.getSort().toString());
 
-        PagedResponse<ProductSummaryResponse> cachedProducts = catalogCacheService.getPayload(cacheKey, new TypeReference<PagedResponse<ProductSummaryResponse>>() {});
+        PagedResponse<ProductSummaryResponse> cachedProducts = cacheService.getPayload(cacheKey, new TypeReference<PagedResponse<ProductSummaryResponse>>() {});
         if (cachedProducts != null) {
             return cachedProducts;
         }
@@ -85,7 +85,7 @@ public class ProductService {
         Page<ProductSummaryResponse> activeProducts = getActiveProducts(categoryId, search, pageable);
         PagedResponse<ProductSummaryResponse> pagedResponse = PagedResponse.from(activeProducts);
 
-        catalogCacheService.set(cacheKey, pagedResponse, Duration.ofHours(1));
+        cacheService.set(cacheKey, pagedResponse, Duration.ofHours(1));
 
         return pagedResponse;
     }
@@ -119,7 +119,7 @@ public class ProductService {
     public List<ProductSummaryResponse> getTopSelling() {
         String cacheKey = CacheKeys.productTopSelling();
         
-        List<ProductSummaryResponse> cachedProducts = catalogCacheService.getPayload(cacheKey, new TypeReference<List<ProductSummaryResponse>>() {});
+        List<ProductSummaryResponse> cachedProducts = cacheService.getPayload(cacheKey, new TypeReference<List<ProductSummaryResponse>>() {});
         if (cachedProducts != null) {
             return cachedProducts;
         }
@@ -129,14 +129,14 @@ public class ProductService {
                 .map(productMapper::toSummary)
                 .toList();
 
-        catalogCacheService.set(cacheKey, products, Duration.ofMinutes(15));
+        cacheService.set(cacheKey, products, Duration.ofMinutes(15));
 
         return products;
     }
 
     public Productdetail getProductById(Long id) {
         String cacheKey  = CacheKeys.productDetail(id);
-        Productdetail cachedProduct  = catalogCacheService.getPayload(cacheKey, Productdetail.class);
+        Productdetail cachedProduct  = cacheService.getPayload(cacheKey, Productdetail.class);
         if (cachedProduct != null) {
             return cachedProduct;
         }
@@ -145,7 +145,7 @@ public class ProductService {
             .map(productMapper::toDetail)
                 .orElseThrow(() -> new ApiError(ErrorCode.PRODUCT_NOT_FOUND));
         
-        catalogCacheService.set(cacheKey, productDetail, Duration.ofHours(1));
+        cacheService.set(cacheKey, productDetail, Duration.ofHours(1));
 
         return productDetail;
     }
@@ -172,6 +172,11 @@ public class ProductService {
         }
     }
 
+    // Xóa cache sản phẩm, danh sách catalog/admin và cart snapshot sau khi commit.
+    private void invalidateProductCachesAfterCommit(Long productId) {
+        cacheInvalidationService.productChanged(productId);
+    }
+
     // Kiểm tra giá có phần thập phân khác 0 hay không.
     private boolean hasFractionPart(BigDecimal value) {
         return value != null && value.stripTrailingZeros().scale() > 0;
@@ -190,7 +195,7 @@ public class ProductService {
             pageable.getPageSize(),
             pageable.getSort().toString());
 
-        AdminProductListResponse cachedProducts = catalogCacheService.getPayload(cacheKey, AdminProductListResponse.class);
+        AdminProductListResponse cachedProducts = cacheService.getPayload(cacheKey, AdminProductListResponse.class);
         if (cachedProducts != null) {
             return ApiResponse.success("Lấy danh sách sản phẩm thành công", cachedProducts);
         }
@@ -207,7 +212,7 @@ public class ProductService {
                 .products(PagedResponse.from(products))
                 .build();
 
-        catalogCacheService.set(cacheKey, response, Duration.ofHours(1));
+        cacheService.set(cacheKey, response, Duration.ofHours(1));
 
         return ApiResponse.success("Lấy danh sách sản phẩm thành công", response);
     }
@@ -238,8 +243,7 @@ public class ProductService {
 
         ProductStatus beforeStatus = product.getStatus();
         product.setStatus(status);
-        catalogCacheService.registerProductCacheDeleteAfterCommit(productId);
-        cartCacheService.registerCartCacheDeleteAfterCommit();
+        invalidateProductCachesAfterCommit(productId);
 
         logger.info("admin voi id:{} vừa cập nhật trang thái sản phẩm {} -> {} với sản phẩm id:{} ",
                 currentUserClass.getCurrentUser().getId(), beforeStatus, status, productId);
@@ -302,8 +306,7 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
 
-        catalogCacheService.registerProductCacheDeleteAfterCommit(savedProduct.getId());
-        cartCacheService.registerCartCacheDeleteAfterCommit();
+        invalidateProductCachesAfterCommit(savedProduct.getId());
 
         logger.info("admin với với id:{} và username: {} đã thêm 1 sản phẩm mới",
                 currentUserClass.getCurrentUser().getId(),
@@ -381,8 +384,7 @@ public class ProductService {
         registerProductImageCleanup(publicIdsToDeleteAfterCommit.stream().distinct().toList());
 
         Product savedProduct = productRepository.save(product);
-        catalogCacheService.registerProductCacheDeleteAfterCommit(savedProduct.getId());
-        cartCacheService.registerCartCacheDeleteAfterCommit();
+        invalidateProductCachesAfterCommit(savedProduct.getId());
         logger.info("admin với id: {} cập nhật sản phẩm với id:{} thành công",
                 currentUserClass.getCurrentUser().getId(), productId);
 
@@ -581,8 +583,7 @@ public class ProductService {
         cartLineItemRepository.deleteByProduct_Id(product.getId());
         productRepository.delete(product);
         registerProductImageCleanup(publicIds);
-        catalogCacheService.registerProductCacheDeleteAfterCommit(product.getId());
-        cartCacheService.registerCartCacheDeleteAfterCommit();
+        invalidateProductCachesAfterCommit(product.getId());
     }
 
     // Gom publicId cua thumbnail va cac anh phu de xoa tren Cloudinary sau khi xoa

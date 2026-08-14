@@ -9,13 +9,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import shop.shop.common.RateLimitRule;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
-import shop.shop.integration.redis.service.RateLimitService;
+import shop.shop.integration.redis.service.interfaces.IRateLimitService;
 
 @Component
 @RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private final RateLimitService rateLimitService;
+    private final IRateLimitService rateLimitService;
     private final RateLimitRuleRegistry ruleRegistry;
 
     @Override

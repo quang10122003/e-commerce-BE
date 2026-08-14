@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import shop.shop.common.PaymentMethod;
 import shop.shop.common.dto.response.ApiResponse;
-import shop.shop.common.error.ApiError;
-import shop.shop.common.error.ErrorCode;
 import shop.shop.order.dto.request.OrderRequest;
 import shop.shop.order.dto.response.CheckoutResponse;
 import shop.shop.order.dto.response.OrderResponse;

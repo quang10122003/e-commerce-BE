@@ -18,9 +18,7 @@ import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.integration.RabbitMQ.QueueService;
 import shop.shop.integration.RabbitMQ.DTO.CreateOrderMailProducer;
 import shop.shop.integration.RabbitMQ.DTO.OrderItemMailProducer;
-import shop.shop.integration.Resend.DTO.resquest.CreateOrderMailDTO;
-import shop.shop.integration.Resend.service.EmailService;
-import shop.shop.integration.redis.service.CatalogCacheService;
+import shop.shop.integration.redis.service.CacheInvalidationService;
 import shop.shop.order.dto.request.OrderRequest;
 import shop.shop.order.dto.response.CheckoutResponse;
 import shop.shop.order.entity.Order;
@@ -50,7 +48,7 @@ public class OrderCheckoutService {
     OrderRepository orderRepository;
     ProductRepository productRepository;
     CartLineItemRepository cartLineItemRepository;
-    CatalogCacheService catalogCacheService;
+    CacheInvalidationService cacheInvalidationService;
     List<IOrderPaymentHandler> paymentHandlers; 
     QueueService queueService;
     OrderItemMapper orderItemMapper;
@@ -69,7 +67,7 @@ public class OrderCheckoutService {
         order = saveOrderWithStock(order);
 
         List<Long> productIds = extractProductIds(request);
-        catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
+        cacheInvalidationService.productsChanged(productIds);
 
         String orderCode = generateOrderCode(order.getId());
         order.setOrderCode(orderCode);

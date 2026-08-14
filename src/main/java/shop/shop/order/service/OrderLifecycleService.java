@@ -13,12 +13,11 @@ import shop.shop.admin.dto.response.AdminOrderItemRepone;
 import shop.shop.admin.dto.response.AdminOrdersRepone;
 import shop.shop.common.CancelledBy;
 import shop.shop.common.OrderStatus;
-import shop.shop.common.PaymentMethod;
 import shop.shop.common.dto.response.ApiResponse;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
-import shop.shop.integration.redis.service.CatalogCacheService;
+import shop.shop.integration.redis.service.CacheInvalidationService;
 import shop.shop.order.dto.response.OrderResponse;
 import shop.shop.order.entity.Order;
 import shop.shop.order.entity.OrderItem;
@@ -44,7 +43,7 @@ public class OrderLifecycleService {
     OrderRepository orderRepository;
     ProductRepository productRepository;
     OrderMapper orderMapper;
-    CatalogCacheService catalogCacheService;
+    CacheInvalidationService cacheInvalidationService;
     OrderPaymentPolicyService orderPaymentPolicyService;
     OrderStatusTransitionPolicyRegistry orderStatusTransitionPolicyRegistry;
 
@@ -76,7 +75,7 @@ public class OrderLifecycleService {
                 .map(OrderItem::getProductId)
                 .toList();
         // xóa cache reddis
-        catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
+        cacheInvalidationService.productsChanged(productIds);
 
         logger.info("user:{} hủy đơn hàng:{} với order code:{}", currentUser.getId(), orderId, order.getOrderCode());
         return orderMapper.toResponse(orderRepository.save(order));
@@ -129,14 +128,13 @@ public class OrderLifecycleService {
             List<Long> productIds = order.getItems().stream()
                     .map(OrderItem::getProductId)
                     .toList();
-            catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
             order.setCancelledBy(CancelledBy.ADMIN);
             // goi orderPaymentPolicyService để xử lý role payment khi hủy order
             orderPaymentPolicyService.handlePaymentWhenCancelOrder(order, CancelledBy.ADMIN);
             // hoàn trả stock
             restoreStockWhenCancelOrder(order);
 
-            catalogCacheService.registerProductCacheDeleteAfterCommit(productIds);
+            cacheInvalidationService.productsChanged(productIds);
         }
         logger.info("admin:{} chuyển trạng thái đơn hàng:{} với order code:{} về {}",
                 currentUserClass.getCurrentUser().getId(), orderId, order.getOrderCode(), status);

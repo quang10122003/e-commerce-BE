@@ -22,7 +22,8 @@ import shop.shop.common.cache.CacheKeys;
 import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
-import shop.shop.integration.redis.service.CartCacheService;
+import shop.shop.integration.redis.service.CacheInvalidationService;
+import shop.shop.integration.redis.service.interfaces.ICacheService;
 import shop.shop.product.entity.Product;
 import shop.shop.common.ProductStatus;
 import shop.shop.product.repository.ProductRepository;
@@ -46,7 +47,8 @@ public class CartService {
     ProductRepository productRepository;
     CurrentUserProvider currentUserClass;
     CartMapper cartMapper;
-    CartCacheService cartCacheService;
+    ICacheService cacheService;
+    CacheInvalidationService cacheInvalidationService;
 
     @Transactional(readOnly = true)
     public CartResponse getCurrentUserCart() {
@@ -54,13 +56,13 @@ public class CartService {
         String cacheKey = CacheKeys.cartByUser(currentUser.getId());
 
         // Lấy giỏ hàng từ cache Redis nếu dữ liệu đã tồn tại.
-        CartResponse cachedCart = cartCacheService.getPayload(cacheKey, CartResponse.class);
+        CartResponse cachedCart = cacheService.getPayload(cacheKey, CartResponse.class);
         if (cachedCart != null) {
             return cachedCart;
         }
 
         CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
-        cartCacheService.set(cacheKey, cartResponse, Duration.ofDays(7));
+        cacheService.set(cacheKey, cartResponse, Duration.ofDays(7));
 
         return cartResponse;
     }
@@ -86,7 +88,7 @@ public class CartService {
         cartLineItemRepository.save(cartLineItem);
 
         CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
-        cartCacheService.registerCartCacheUpdateAfterCommit(currentUser.getId(), cartResponse);
+        cacheInvalidationService.cartChanged(currentUser.getId(), cartResponse);
 
         return cartResponse;
     }
@@ -105,7 +107,7 @@ public class CartService {
         cartLineItemRepository.delete(cartLineItem);
 
         CartResponse cartResponse = buildCartResponseFromDb(currentUser.getId());
-        cartCacheService.registerCartCacheUpdateAfterCommit(currentUser.getId(), cartResponse);
+        cacheInvalidationService.cartChanged(currentUser.getId(), cartResponse);
 
         return cartResponse;
     }
