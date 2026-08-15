@@ -3,7 +3,6 @@ package shop.shop.admin.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,39 +17,28 @@ import shop.shop.admin.dto.request.AdminUpdateCategoriRequest;
 import shop.shop.admin.dto.request.AdminUpdateProductRequest;
 import shop.shop.admin.dto.request.AdminUserUpdateRequest;
 import shop.shop.admin.dto.response.AdminCatagoryOverviewRepone;
-import shop.shop.admin.dto.response.AdminNewOrderOverview;
 import shop.shop.admin.dto.response.AdminOrderItemRepone;
-import shop.shop.admin.dto.response.AdminOrderOverview;
 import shop.shop.admin.dto.response.AdminOrdersRepone;
 import shop.shop.admin.dto.response.AdminOverviewRepone;
 import shop.shop.admin.dto.response.AdminPaymentsRepone;
 import shop.shop.admin.dto.response.AdminProductListResponse;
-import shop.shop.admin.dto.response.AdminProductOverview;
 import shop.shop.admin.dto.response.AdminProductStatusResponse;
 import shop.shop.admin.dto.response.AdminProductSummaryResponse;
-import shop.shop.admin.dto.response.AdminRevenueIn7day;
-import shop.shop.admin.dto.response.AdminRevenueOverview;
 import shop.shop.admin.dto.response.AdminRevenueRepone;
 import shop.shop.admin.dto.response.AdminUserDetailResponse;
 import shop.shop.admin.dto.response.AdminUserListResponse;
 import shop.shop.admin.dto.response.AdminUserLockResponse;
-import shop.shop.admin.dto.response.AdminUserOverview;
 import shop.shop.admin.dto.response.RoleRepone;
 import shop.shop.category.dto.response.CategorySummaryResponse;
 import shop.shop.category.service.CategoryOverviewQueryService;
 import shop.shop.category.service.CategoryService;
-import shop.shop.common.OrderStatus;
-import shop.shop.common.PaymentMethod;
 import shop.shop.common.PeriodType;
 import shop.shop.common.ProductStatus;
 import shop.shop.common.dto.response.ApiResponse;
-import shop.shop.order.repo.OrderRepository;
 import shop.shop.order.service.OrderLifecycleService;
 import shop.shop.order.service.RevenueReportQueryService;
 import shop.shop.payment.service.PaymentService;
-import shop.shop.product.repository.ProductRepository;
 import shop.shop.product.service.ProductAdminService;
-import shop.shop.user.repos.UserRepo;
 import shop.shop.user.service.UserService;
 
 @Service
@@ -59,15 +47,13 @@ import shop.shop.user.service.UserService;
 public class AdminService {
         RoleService roleService;
         UserService userService;
-        UserRepo userRepo;
-        ProductRepository productRepository;
         ProductAdminService productAdminService;
-        OrderRepository orderRepository;
         OrderLifecycleService orderLifecycleService;
         RevenueReportQueryService revenueReportQueryService;
         CategoryService categoryService;
         PaymentService paymentService;
         CategoryOverviewQueryService categoryOverviewQueryService;
+        AdminOverviewQueryService adminOverviewQueryService;
 
         public ApiResponse<List<RoleRepone>> getRole() {
                 return roleService.getRole();
@@ -118,48 +104,7 @@ public class AdminService {
         }
 
         public ApiResponse<AdminOverviewRepone> getOverview() {
-
-                AdminUserOverview adminUserOverview = new AdminUserOverview(userRepo.countAllUsersForAdmin(),
-                                userRepo.countNewUsersInLast7Days());
-
-                AdminProductOverview adminProductOverview = new AdminProductOverview(
-                                productRepository.countTotalProducts(), productRepository.countProductsActive());
-
-                // Map interface projection về DTO.
-                List<AdminNewOrderOverview> newOrders = orderRepository.findTop5NewOrderOverview()
-                                .stream()
-                                .map(item -> new AdminNewOrderOverview(
-                                                item.getId(),
-                                                item.getCreatedAt(),
-                                                item.getShippingName(),
-                                                item.getTotalAmount(),
-                                                item.getMethodPayment() == null ? null
-                                                                : PaymentMethod.valueOf(item.getMethodPayment()),
-                                                OrderStatus.valueOf(item.getStatusOrder())))
-                                .toList();
-
-                AdminOrderOverview adminOrderOverview = new AdminOrderOverview(orderRepository.countTodayOrderCount(),
-                                orderRepository.countByStatus(OrderStatus.PENDING), newOrders);
-
-                // Doanh thu tuần trước.
-                BigDecimal LastWeekRevenue = revenueReportQueryService.getLastWeekRevenue();
-
-                // Doanh thu tuần hiện tại.
-                BigDecimal weekRevenue = revenueReportQueryService.getWeekRevenue();
-
-                // Mức tăng trưởng doanh thu của tuần hiện tại so với tuần vừa qua.
-                BigDecimal growth = revenueReportQueryService.calculateGrowth(weekRevenue, LastWeekRevenue);
-
-                // Doanh thu trong 7 ngày.
-                List<AdminRevenueIn7day> listAdminRevenueIn7day = revenueReportQueryService.getRevenueIn7Days();
-
-                AdminRevenueOverview adminRevenueOverview = new AdminRevenueOverview(weekRevenue, growth,
-                                listAdminRevenueIn7day);
-
-                AdminOverviewRepone adminOverviewRepone = new AdminOverviewRepone(adminUserOverview,
-                                adminProductOverview, adminOrderOverview, adminRevenueOverview);
-
-                return ApiResponse.success("lấy doanh thu trong tuần thành công", adminOverviewRepone);
+                return adminOverviewQueryService.getOverview();
         }
 
         public ApiResponse<List<CategorySummaryResponse>> getAllCategories() {
