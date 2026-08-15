@@ -9,14 +9,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import shop.shop.integration.wedsocket.service.StompWebSocketSender;
+import shop.shop.integration.wedsocket.service.interfaces.IWebSocketSender;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PaymentWebhookNotifier {
-    StompWebSocketSender stompWebSocketSender;
+    IWebSocketSender iWebSocketSender;
 
     public void notify(String orderCode, String status, String message) {
         try {
@@ -24,7 +24,7 @@ public class PaymentWebhookNotifier {
                     "status", status,
                     "orderCode", orderCode,
                     "message", message);
-            stompWebSocketSender.send("/topic/payment/" + orderCode, payload);
+            iWebSocketSender.send("/topic/payment/" + orderCode, payload);
         } catch (Exception ex) {
             log.error("Gửi thông báo socket thất bại: orderCode={}, status={}, message={}, error={}",
                     orderCode, status, message, ex.getMessage(), ex);

@@ -1,3 +1,4 @@
+// class Chỉ điều phối nghiệp vụ chat (tạo room, gửi tin, đánh dấu đã đọc).
 package shop.shop.chat.service;
 
 import lombok.AccessLevel;
@@ -23,7 +24,7 @@ import shop.shop.common.error.ApiError;
 import shop.shop.common.error.ErrorCode;
 import shop.shop.common.until.CurrentUserProvider;
 import shop.shop.common.until.ValidationUtils;
-import shop.shop.integration.wedsocket.service.StompWebSocketSender;
+import shop.shop.integration.wedsocket.service.interfaces.IWebSocketSender;
 import shop.shop.product.entity.Product;
 import shop.shop.product.repository.ProductRepository;
 import shop.shop.user.entity.User;
@@ -34,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -43,11 +45,13 @@ public class ChatService {
     ProductRepository productRepository;
     UserRepo userRepo;
     ChatMapper chatMapper;
-    StompWebSocketSender stompWebSocketSender;
+    IWebSocketSender iWebSocketSender;
     CurrentUserProvider currentUserProvider;
     ValidationUtils validationUtils;
+    ChatAccessGuard chatAccessGuard;
+    ChatRoomViewAssembler chatRoomViewAssembler;
 
-    // Tao phong chat moi cho user hien tai theo san pham.
+    // Tạo phòng chat mới cho user hiện tại theo sản phẩm.
     @Transactional
     public ApiResponse<ChatRoomResponse> createRoom(Long productId) {
         User user = currentUserProvider.getCurrentUser();
@@ -59,10 +63,11 @@ public class ChatService {
         newRoom.setProduct(product);
         newRoom.setUser(user);
 
-        return ApiResponse.success("Lay room chat thanh cong", chatMapper.toRoomResponse(chatRoomRepository.save(newRoom)));
+        return ApiResponse.success("Lay room chat thanh cong",
+                chatMapper.toRoomResponse(chatRoomRepository.save(newRoom)));
     }
 
-    // Lay phong chat cua user hien tai theo san pham.
+    // Lấy phòng chat của user hiện tại theo sản phẩm.
     @Transactional(readOnly = true)
     public ApiResponse<ChatRoomResponse> getCurrentUserRoomByProduct(Long productId) {
         User user = currentUserProvider.getCurrentUser();
@@ -74,10 +79,11 @@ public class ChatService {
                 .findRoom(product.getId(), user.getId())
                 .orElseThrow(() -> new ApiError(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        return ApiResponse.success("Lay room chat thanh cong", toRoomResponseForViewer(room, user));
+        return ApiResponse.success("Lay room chat thanh cong",
+                chatRoomViewAssembler.toRoomResponseForViewer(room, user));
     }
 
-    // Lay danh sach phong chat cua user hien tai.
+    // Lấy danh sách phòng chat của user hiện tại.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getCurrentUserRooms(String search) {
         User user = currentUserProvider.getCurrentUser();
@@ -88,13 +94,12 @@ public class ChatService {
 
         return ApiResponse.success(
                 "Lay danh sach room chat cua user thanh cong",
-                rooms
-                        .stream()
-                        .map(room -> toRoomResponseForViewer(room, user))
+                rooms.stream()
+                        .map(room -> chatRoomViewAssembler.toRoomResponseForViewer(room, user))
                         .toList());
     }
 
-    // Lay danh sach phong chat cho admin va sap xep theo tin nhan moi nhat.
+    // Lấy danh sách phòng chat cho admin và sắp xếp theo tin nhắn mới nhất.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatRoomResponse>> getAdminRooms(String search) {
         User admin = currentUserProvider.getCurrentUser();
@@ -106,7 +111,7 @@ public class ChatService {
 
         List<ChatRoomResponse> rooms = sourceRooms
                 .stream()
-                .map(room -> toRoomResponseForViewer(room, admin))
+                .map(room -> chatRoomViewAssembler.toRoomResponseForViewer(room, admin))
                 .sorted((left, right) -> {
                     LocalDateTime leftTime = left.getLastMessageAt() != null
                             ? left.getLastMessageAt()
@@ -123,15 +128,14 @@ public class ChatService {
         return ApiResponse.success("Lay danh sach room chat thanh cong", rooms);
     }
 
-    // Chuẩn hóa từ khóa tìm kiếm trước khi truyền xuống repository.
-    // Lay toan bo tin nhan trong mot phong chat sau khi kiem tra quyen truy cap.
+    // Lấy toàn bộ tin nhắn trong một phòng chat sau khi kiểm tra quyền truy cập.
     @Transactional(readOnly = true)
     public ApiResponse<List<ChatMessageResponse>> getMessages(Long roomId) {
         User user = currentUserProvider.getCurrentUser();
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
 
-        validateRoomAccess(room, user);
+        chatAccessGuard.validateRoomAccess(room, user);
 
         return ApiResponse.success(
                 "Lay tin nhan thanh cong",
@@ -141,8 +145,8 @@ public class ChatService {
                         .toList());
     }
 
-    // Luu tin nhan WebSocket va phat realtime cho room chat cung danh sach phong.
-    // Lan admin phan hoi dau tien co the tao them tin SYSTEM truoc tin TEXT.
+    // gửi tin nhắn WebSocketWebSocket bắn envetn cho topic  room chat + danh sách phòng.
+    // Lần admin phản hồi đầu tiên có thể tạo thêm tin SYSTEM trước tin TEXT.
     @Transactional
     public void sendMessage(Long roomId, SendMessageRequest request, Principal principal) {
         if (request == null || request.getContent() == null || request.getContent().isBlank()) {
@@ -158,8 +162,8 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
 
-        validateRoomAccess(room, sender);
-        boolean roomAssigned = assignRoomToAdminIfNeeded(room, sender);
+        chatAccessGuard.validateRoomAccess(room, sender);
+        boolean roomAssigned = chatAccessGuard.assignRoomToAdminIfNeeded(room, sender);
 
         List<Message> persistedMessages = new ArrayList<>();
 
@@ -173,15 +177,16 @@ public class ChatService {
                 .map(chatMapper::toMessageResponse)
                 .toList();
 
-        // Gui tung tin nhan theo dung thu tu da luu: SYSTEM truoc, TEXT sau.
-        responses.forEach(response -> stompWebSocketSender.send("/topic/chat/rooms/" + roomId, response));
+        // Gửi từng tin nhắn theo đúng thứ tự đã lưu: SYSTEM trước, TEXT sau.
+        responses.forEach(response -> iWebSocketSender.send("/topic/chat/rooms/" + roomId, response));
 
-        // Gui tom tat moi de danh sach phong cap nhat lastMessage va unreadCount realtime.
+        // Gửi tóm tắt mới để danh sách phòng cập nhật lastMessage và unreadCount
+        // realtime.
         ChatRoomResponse roomSummary = getRoomSummaryForBroadcast(roomId);
-        stompWebSocketSender.send("/topic/chat/rooms", roomSummary);
+        iWebSocketSender.send("/topic/chat/rooms", roomSummary);
     }
 
-    // Danh dau cac tin nhan chua doc trong room la da doc boi user hien tai.
+    // Đánh dấu các tin nhắn chưa đọc trong room là đã đọc bởi user hiện tại.
     @Transactional
     public MarkRoomAsReadResult markRoomAsRead(Long roomId) {
         User viewer = currentUserProvider.getCurrentUser();
@@ -189,17 +194,16 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
 
-        validateRoomAccess(room, viewer);
-        Long unreadSenderId = resolveUnreadSenderId(room, viewer);
+        chatAccessGuard.validateRoomAccess(room, viewer);
+        Long unreadSenderId = chatAccessGuard.resolveUnreadSenderId(room, viewer);
         List<Long> readMessageIds = List.of();
 
         if (unreadSenderId != null) {
-            // Lay danh sach message id truoc khi cap nhat de client ben gui biet tin nao da doc.
             readMessageIds = messageRepository.findUnreadTextMessageIdsFromSender(roomId, unreadSenderId);
             messageRepository.markTextMessagesFromSenderAsRead(roomId, unreadSenderId);
         }
 
-        ChatRoomResponse roomResponseForReader = toRoomResponseForViewer(room, viewer);
+        ChatRoomResponse roomResponseForReader = chatRoomViewAssembler.toRoomResponseForViewer(room, viewer);
         ChatReadReceiptResponse readReceipt = readMessageIds.isEmpty()
                 ? null
                 : ChatReadReceiptResponse.builder()
@@ -213,12 +217,12 @@ public class ChatService {
 
         return MarkRoomAsReadResult.builder()
                 .room(roomResponseForReader)
-                .adminRoomSummary(isAdmin(viewer) ? roomResponseForReader : null)
+                .adminRoomSummary(chatAccessGuard.isAdmin(viewer) ? roomResponseForReader : null)
                 .readReceipt(readReceipt)
                 .build();
     }
 
-    // Lay thong tin tom tat cua mot room theo nguoi dung dang ket noi WebSocket.
+    // Lấy thông tin tóm tắt của một room theo người dùng đang kết nối WebSocket.
     @Transactional(readOnly = true)
     public ChatRoomResponse getRoomSummaryForPrincipal(Long roomId, Principal principal) {
         if (principal == null) {
@@ -231,13 +235,13 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiError(ErrorCode.BAD_REQUEST, "Khong tim thay room chat"));
 
-        validateRoomAccess(room, viewer);
+        chatAccessGuard.validateRoomAccess(room, viewer);
 
-        return toRoomResponseForViewer(room, viewer);
+        return chatRoomViewAssembler.toRoomResponseForViewer(room, viewer);
     }
 
-    // Tao ban tom tat room dung chung cho phat realtime toi danh sach phong.
-    // Mac dinh dung goc nhin admin de unreadCount dung khi customer gui tin.
+    // Tạo bản tóm tắt room dùng chung cho phát realtime tới danh sách phòng.
+    // Mặc định dùng góc nhìn admin để unreadCount đúng khi customer gửi tin.
     @Transactional(readOnly = true)
     public ChatRoomResponse getRoomSummaryForBroadcast(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
@@ -248,41 +252,10 @@ public class ChatService {
                 : userRepo.findFirstActiveAdminForChatSummary()
                         .orElseThrow(() -> new ApiError(ErrorCode.USER_NOT_FOUND));
 
-        return toRoomResponseForViewer(room, adminViewer);
+        return chatRoomViewAssembler.toRoomResponseForViewer(room, adminViewer);
     }
 
-    // Kiem tra user co quyen xem hoac thao tac voi room hay khong.
-    private void validateRoomAccess(ChatRoom room, User user) {
-        if (isAdmin(user)) {
-            // Room chua gan admin hoac da gan dung admin nay thi duoc truy cap.
-            if (room.getAdmin() == null
-                    || (room.getAdmin() != null && room.getAdmin().getId().equals(user.getId()))) {
-                return;
-            }
-            throw new ApiError(ErrorCode.ACCESS_DENIED);
-        }
-
-        // User thong thuong chi duoc truy cap room thuoc ve chinh ho.
-        if (room.getUser() == null || !room.getUser().getId().equals(user.getId())) {
-            throw new ApiError(ErrorCode.ACCESS_DENIED);
-        }
-    }
-
-    // Gan room cho admin khi admin phan hoi lan dau tien.
-    private boolean assignRoomToAdminIfNeeded(ChatRoom room, User sender) {
-        if (isAdmin(sender)
-                && room.getAdmin() == null
-                && room.getUser() != null
-                && !room.getUser().getId().equals(sender.getId())) {
-            room.setAdmin(sender);
-            chatRoomRepository.save(room);
-            return true;
-        }
-
-        return false;
-    }
-
-    // Tao tin nhan he thong thong bao admin da tiep nhan room.
+    // Tạo tin nhắn hệ thống thông báo admin đã tiếp nhận room.
     private Message createAdminAssignedSystemMessage(ChatRoom room, User admin) {
         Message message = new Message();
         message.setRoom(room);
@@ -292,7 +265,7 @@ public class ChatService {
         return message;
     }
 
-    // Tao tin nhan van ban do user hoac admin gui.
+    // Tạo tin nhắn văn bản do user hoặc admin gửi.
     private Message createTextMessage(ChatRoom room, User sender, String content) {
         Message message = new Message();
         message.setRoom(room);
@@ -301,58 +274,5 @@ public class ChatService {
         message.setMessageType(MessageType.TEXT);
 
         return message;
-    }
-
-    // Kiem tra user co role ADMIN hay khong.
-    private boolean isAdmin(User user) {
-        return user != null && "ADMIN".equalsIgnoreCase(user.getRoleName());
-    }
-
-    // Tao response room theo goc nhin cua nguoi xem, gom lastMessage va unreadCount.
-    private ChatRoomResponse toRoomResponseForViewer(ChatRoom room, User viewer) {
-        ChatRoomResponse chatRoomResponse = chatMapper.toRoomResponse(room);
-
-        // Neu room co tin nhan cuoi thi dua thong tin do vao ban tom tat.
-        messageRepository.findLatestMessageByRoom(room.getId()).ifPresent(lastMessage -> {
-            chatRoomResponse.setLastMessageContent(lastMessage.getContent());
-
-            chatRoomResponse.setLastMessageType(
-                    lastMessage.getMessageType() == null ? null : lastMessage.getMessageType().toString());
-
-            chatRoomResponse.setLastMessageAt(lastMessage.getCreatedAt());
-
-            // Gan thong tin nguoi gui tin nhan cuoi cung neu la tin TEXT co sender.
-            if (lastMessage.getSender() != null) {
-                chatRoomResponse.setLastMessageSenderId(lastMessage.getSender().getId());
-                chatRoomResponse.setLastMessageSenderName(lastMessage.getSender().getFullName());
-            }
-        });
-
-        // Xac dinh phia gui can dem unread theo goc nhin cua viewer.
-        Long unreadSenderId = resolveUnreadSenderId(room, viewer);
-
-        if (unreadSenderId != null) {
-            // Dem so tin TEXT chua doc tu phia doi dien trong room.
-            chatRoomResponse.setUnreadCount(
-                    messageRepository.countUnreadTextMessagesFromSender(
-                            room.getId(),
-                            unreadSenderId));
-        }
-        return chatRoomResponse;
-    }
-
-    // Lay id sender phia doi dien de tinh so tin nhan chua doc.
-    private Long resolveUnreadSenderId(ChatRoom room, User viewer) {
-        // Neu viewer la admin thi unread den tu customer.
-        if (isAdmin(viewer)) {
-            return room.getUser() == null
-                    ? null
-                    : room.getUser().getId();
-        }
-
-        // Neu viewer la customer thi unread den tu admin.
-        return room.getAdmin() == null
-                ? null
-                : room.getAdmin().getId();
     }
 }

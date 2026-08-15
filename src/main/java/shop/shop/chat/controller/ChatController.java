@@ -13,17 +13,17 @@ import shop.shop.chat.Dto.repone.ChatRoomResponse;
 import shop.shop.chat.Dto.repone.MarkRoomAsReadResult;
 import shop.shop.chat.service.ChatService;
 import shop.shop.common.dto.response.ApiResponse;
-import shop.shop.integration.wedsocket.service.StompWebSocketSender;
+import shop.shop.integration.wedsocket.service.interfaces.IWebSocketSender;
 
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
-@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ChatController {
     ChatService chatService;
-    StompWebSocketSender stompWebSocketSender;
+    IWebSocketSender iWebSocketSender;
 
     @PostMapping("/chat/rooms/{productId}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> createRoom(@PathVariable Long productId) {
@@ -53,19 +53,21 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getAdminRooms(search));
     }
 
-    // Danh dau da doc tin nhan.
+    // Đánh dấu đã đọc tin nhắn.
     @PostMapping("/chat/rooms/{roomId}/read")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> markRoomAsRead(@PathVariable Long roomId) {
         MarkRoomAsReadResult result = chatService.markRoomAsRead(roomId);
 
-        // Phat read-receipt cho tat ca client dang mo room de cap nhat trang thai da doc theo thoi gian thuc.
+        // Phát read-receipt cho tất cả client đang mở room để cập nhật trạng thái đã
+        // đọc theo thời gian thực.
         if (result.getReadReceipt() != null) {
-            stompWebSocketSender.send("/topic/chat/rooms/" + roomId, result.getReadReceipt());
+            iWebSocketSender.send("/topic/chat/rooms/" + roomId, result.getReadReceipt());
         }
 
-        // Khi admin doc tin cua customer, inbox admin cung can bo badge unread ma khong phai refresh hoac polling.
+        // Khi admin đọc tin của customer, inbox admin cũng cần bỏ badge unread mà không
+        // phải refresh hoặc polling.
         if (result.getAdminRoomSummary() != null) {
-            stompWebSocketSender.send("/topic/admin/chat/rooms", result.getAdminRoomSummary());
+            iWebSocketSender.send("/topic/admin/chat/rooms", result.getAdminRoomSummary());
         }
 
         return ResponseEntity.ok(ApiResponse.success("Đánh dấu đã đọc thành công", result.getRoom()));
