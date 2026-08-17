@@ -31,7 +31,6 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         String ip = getClientIp(request);
         String redisKey = rule.keyPrefix() + ":" + ip;
-
         boolean allowed = rateLimitService.isAllowed(redisKey, rule.limit(), rule.ttl());
 
         if (!allowed) {
@@ -41,7 +40,6 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    // lấy ip của user
     private String getClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (validationUtils.hasText(forwarded)) {

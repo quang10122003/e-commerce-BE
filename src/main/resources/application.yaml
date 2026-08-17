@@ -36,6 +36,20 @@ spring:
     api-secret: ${CLOUDINARY_API_SECRET}
 
 app:
+# rule interceptor limit cho api
+  rate-limit:
+      rules:
+        - path: /api/auth/signup      
+          method: POST
+          limit: 5
+          ttl: 1d
+          key-prefix: register
+          # limit login
+        - path: /api/auth/login       
+          method: POST
+          limit: 5
+          ttl: 3m
+          key-prefix: login
   mail:
     order-sender: ${MAIL_ORDER_SENDER:order@daoxuanquang.dev}
     reset-password-sender: ${MAIL_RESET_PASSWORD_SENDER:support@daoxuanquang.dev}
