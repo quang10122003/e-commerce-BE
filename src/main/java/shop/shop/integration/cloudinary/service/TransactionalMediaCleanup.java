@@ -8,10 +8,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import shop.shop.common.until.ValidationUtils;
 import shop.shop.integration.cloudinary.service.interfaces.IMediaStorage;
 
 @Component
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 public class TransactionalMediaCleanup {
     IMediaStorage mediaStorage;
     ValidationUtils validationUtils;
